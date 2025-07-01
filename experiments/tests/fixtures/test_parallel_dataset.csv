@@ -1,0 +1,17 @@
+,id,title,url,image_url,sponsored,rating,rating_count,price,overall_pick,best_seller,limited_time,discounted,low_stock,stock_quantity,experiment_label,query,experiment_number,position_in_experiment,assigned_position,desired_choice,original_price
+0,test_1_exp1,Product A1,http://example.com/1,http://example.com/img1.jpg,False,4.5,100,10.99,False,False,False,False,False,10,control,mousepad,1,0,0,1,10.99
+1,test_2_exp1,Product B1,http://example.com/2,http://example.com/img2.jpg,False,4.3,200,15.99,False,False,False,False,False,10,control,mousepad,1,1,1,0,15.99
+2,test_3_exp2,Product A2,http://example.com/3,http://example.com/img3.jpg,False,4.7,150,12.99,False,False,False,False,False,10,control,mousepad,2,0,0,1,12.99
+3,test_4_exp2,Product B2,http://example.com/4,http://example.com/img4.jpg,False,4.1,300,18.99,False,False,False,False,False,10,control,mousepad,2,1,1,0,18.99
+4,test_5_exp3,Product A3,http://example.com/5,http://example.com/img5.jpg,False,4.8,120,14.99,False,False,False,False,False,10,experimental,mousepad,1,0,0,1,14.99
+5,test_6_exp3,Product B3,http://example.com/6,http://example.com/img6.jpg,False,4.0,400,22.99,False,False,False,False,False,10,experimental,mousepad,1,1,1,0,22.99
+6,test_7_exp4,Product A4,http://example.com/7,http://example.com/img7.jpg,False,4.6,180,16.99,False,False,False,False,False,10,experimental,mousepad,2,0,0,1,16.99
+7,test_8_exp4,Product B4,http://example.com/8,http://example.com/img8.jpg,False,4.2,250,20.99,False,False,False,False,False,10,experimental,mousepad,2,1,1,0,20.99
+8,test_9_exp5,Product A5,http://example.com/9,http://example.com/img9.jpg,False,4.4,160,13.99,False,False,False,False,False,10,control,toothpaste,1,0,0,1,13.99
+9,test_10_exp5,Product B5,http://example.com/10,http://example.com/img10.jpg,False,4.1,220,17.99,False,False,False,False,False,10,control,toothpaste,1,1,1,0,17.99
+10,test_11_exp6,Product A6,http://example.com/11,http://example.com/img11.jpg,False,4.9,190,15.99,False,False,False,False,False,10,control,toothpaste,2,0,0,1,15.99
+11,test_12_exp6,Product B6,http://example.com/12,http://example.com/img12.jpg,False,4.0,280,21.99,False,False,False,False,False,10,control,toothpaste,2,1,1,0,21.99
+12,test_13_exp7,Product A7,http://example.com/13,http://example.com/img13.jpg,False,4.7,170,14.99,False,False,False,False,False,10,experimental,toothpaste,1,0,0,1,14.99
+13,test_14_exp7,Product B7,http://example.com/14,http://example.com/img14.jpg,False,4.3,240,19.99,False,False,False,False,False,10,experimental,toothpaste,1,1,1,0,19.99
+14,test_15_exp8,Product A8,http://example.com/15,http://example.com/img15.jpg,False,4.5,200,16.99,False,False,False,False,False,10,experimental,toothpaste,2,0,0,1,16.99
+15,test_16_exp8,Product B8,http://example.com/16,http://example.com/img16.jpg,False,4.2,260,23.99,False,False,False,False,False,10,experimental,toothpaste,2,1,1,0,23.99

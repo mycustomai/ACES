@@ -1,0 +1,3 @@
+engine_type: openai
+model: gpt-4.1-2025-04-14
+temperature: 1.0

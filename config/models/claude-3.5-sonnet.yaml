@@ -1,0 +1,3 @@
+engine_type: anthropic
+model: claude-3-5-sonnet-20241022
+temperature: 1.0

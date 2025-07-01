@@ -1,0 +1,45 @@
+[project]
+name = "ai-agent-impact"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.8.0",
+    "anthropic>=0.49.0",
+    "backoff>=2.2.1",
+    "bs4>=0.0.2",
+    "google-cloud-storage>=2.10.0",
+    "google-cloud-aiplatform>=1.58.0",
+    "langchain>=0.3.25",
+    "langchain-anthropic>=0.3.12",
+    "langchain-google-genai>=2.1.5",
+    "langchain-huggingface>=0.2.0",
+    "langchain-openai>=0.3.21",
+    "openai>=1.75.0",
+    "pandas>=2.2.3",
+    "pillow>=11.2.1",
+    "pydantic-settings>=2.9.1",
+    "pytest>=8.4.0",
+    "python-dotenv>=1.1.0",
+    "pyyaml>=6.0.0",
+    "rich>=14.0.0",
+    "selenium>=4.15.0",
+    "vertexai>=1.43.0",
+    "pandas-stubs>=2.2.3.250527",
+    "fastapi>=0.115.12",
+    "datasets>=3.6.0",
+    "uvicorn>=0.34.3",
+    "pytest-asyncio>=1.0.0",
+    "isort>=6.0.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.0.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "sandbox",
+    "agent",
+]

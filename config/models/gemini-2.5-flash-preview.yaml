@@ -1,0 +1,4 @@
+engine_type: gemini
+model: gemini-2.5-flash-preview-05-20
+temperature: 1.0
+thinking_budget: 0

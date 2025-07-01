@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Search Results - {{ query }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="header">
+        <div class="search-container">
+            <form action="/search" method="get" id="search-form">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search for products...">
+                <!-- <select name="sort" onchange="document.getElementById('search-form').submit()">
+                    <option value="similarity" {% if current_sort=='similarity' %}selected{% endif %}>Best Match
+                    </option>
+                    <option value="price_asc" {% if current_sort=='price_asc' %}selected{% endif %}>Price: Low to High
+                    </option>
+                    <option value="price_desc" {% if current_sort=='price_desc' %}selected{% endif %}>Price: High to Low
+                    </option>
+                    <option value="rating" {% if current_sort=='rating' %}selected{% endif %}>Avg. Customer Review
+                    </option>
+                </select> -->
+                <button type="submit">
+                    <span class="search-icon">🔍</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="results-container">
+        {% if products %}
+        
+        {% for product in products %}
+        <div class="product-card">
+            <div class="product-image">
+                <!-- <a href="{{ product.url }}" target="_blank"> -->
+                <a target="_blank"></a>
+                    <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy"
+                        onerror="this.src='https://via.placeholder.com/300'">
+                </a>
+            </div>
+            <div class="product-info">
+                <div class="product-title-section">
+                    <h2 class="product-title">
+                        <a target="_blank">{{ product.title }}</a>
+                    </h2>
+                </div>
+                <div class="product-rating">
+                    {% set rating = product.rating|default('0')|replace('out of 5 stars', '')|trim|float %}
+                    {% set full_stars = (rating|float)|int %}
+                    {% set has_half = (rating - full_stars) >= 0.5 %}
+                    {% set total_stars = 5 %}
+                    {% set remaining_stars = total_stars - full_stars - (1 if has_half and full_stars < total_stars else 0) %} {# Full
+                        stars #} {% for _ in range(full_stars if full_stars <=total_stars else total_stars) %} <span class="star">
+                        ★</span>
+                        {% endfor %}
+                
+                        {# Half star #}
+                        {% if has_half and full_stars < total_stars %} <span class="star partial">★</span>
+                            {% endif %}
+                
+                            {# Empty stars #}
+                            {% for _ in range(remaining_stars if remaining_stars >= 0 else 0) %}
+                            <span class="star empty">☆</span>
+                            {% endfor %}
+                
+                            <span class="rating-value">{{ "%.1f"|format(rating|float) }}</span>
+                            {% if product.rating_count %}
+                            {% set count = product.rating_count|string|replace(',', '')|replace('ratings',
+                            '')|replace('rating', '')|trim %}
+                            <span class="rating-count">({{ count }})</span>
+                            {% endif %}
+                </div>
+                <div class="product-price">
+                    {% set price = product.price|default('0')|replace('$', '')|replace(',', '')|trim %}
+                    <span class="price-symbol">$</span>
+                    <span class="price-amount">{{ "%.2f"|format(price|float) }}</span>
+                </div>
+                <div class="add-to-cart-section">
+                    <div class="add-to-cart-wrapper">
+                        <button class="add-to-cart" data-product-id="{{ product.id }}" onclick="showPopup('{{ product.title }}')">Add to Cart</button>
+                    </div>
+                    <div class="product-tags">
+                        {% if product.sponsored %}
+                        <span class="product-tag sponsored">
+                            Sponsored <span class="info-icon">ⓘ</span>
+                        </span>
+                        {% endif %}
+                        {% if product.best_seller %}
+                        <span class="product-tag best-seller">Best Seller</span>
+                        {% endif %}
+                        {% if product.overall_pick %}
+                        <span class="product-tag overall-pick">Overall Pick</span>
+                        {% endif %}
+                        {% if product.limited_time %}
+                        <span class="product-tag limited-time">Limited Time Offer</span>
+                        {% endif %}
+                        {% if product.discounted %}
+                        <span class="product-tag discounted">Discounted</span>
+                        {% endif %}
+                        {% if product.low_stock %}
+                        <span class="product-tag low-stock">Only {{ product.stock_quantity }} Left</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="no-results">No products found for "{{ query }}"</div>
+        {% endif %}
+
+
+        
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if current_page > 1 %}
+        <a href="/search?q={{ query }}&sort={{ current_sort }}&page={{ current_page-1 }}" class="page-link">&laquo;
+            Previous</a>
+        {% endif %}
+    
+        {% for p in range(1, total_pages + 1) %}
+        {% if p == current_page %}
+        <span class="page-link active">{{ p }}</span>
+        {% else %}
+        <a href="/search?q={{ query }}&sort={{ current_sort }}&page={{ p }}" class="page-link">{{ p }}</a>
+        {% endif %}
+        {% endfor %}
+    
+        {% if current_page < total_pages %} <a
+            href="/search?q={{ query }}&sort={{ current_sort }}&page={{ current_page+1 }}" class="page-link">Next
+            &raquo;</a>
+            {% endif %}
+    </div>
+    {% endif %}
+
+    <br>
+    <br>
+    <br>
+    
+
+    <!-- Popup container -->
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <span class="popup-text"></span>
+            <button class="close-popup">×</button>
+        </div>
+    </div>
+
+    <style>
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+        }
+
+        .popup-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-popup:hover {
+            color: #333;
+        }
+        
+        .product-title-section {
+            position: relative;
+            margin-bottom: 5px;
+        }
+        
+        .add-to-cart-section {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .add-to-cart-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .add-to-cart {
+            /* Keep existing button styles */
+        }
+        
+        .product-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-left: auto;
+        }
+        
+        .product-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .sponsored {
+            background-color: #f7f9f9;
+            color: #565959;
+            border: 1px solid #d5d9d9;
+        }
+        
+        .best-seller {
+            background-color: #f2d0b4;
+            color: #b04d00;
+            border: 1px solid #e4a56b;
+        }
+        
+        .overall-pick {
+            background-color: #e3f0ff;
+            color: #0066c0;
+            border: 1px solid #a2c6ec;
+        }
+        
+        .limited-time {
+            background-color: #ffebee;
+            color: #c5221f;
+            border: 1px solid #ffb8b5;
+            font-weight: 600;
+        }
+        
+        .discounted {
+            background-color: #e8f5e9;
+            color: #1e8e3e;
+            border: 1px solid #b7e1c1;
+        }
+        
+        .low-stock {
+            background-color: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffcc80;
+            font-style: italic;
+        }
+        
+        .info-icon {
+            font-size: 10px;
+            opacity: 0.8;
+            cursor: help;
+        }
+    </style>
+
+    <script>
+        function showPopup(productName) {
+            const popup = document.getElementById('popup');
+            const popupText = document.querySelector('.popup-text');
+            const closeButton = document.querySelector('.close-popup');
+            
+            popupText.textContent = `Thanks for adding ${productName} to your cart!`;
+            popup.style.display = 'block';
+
+            // Automatically hide the popup after 5 seconds
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 5000);
+
+            
+            // Close button click handler
+            closeButton.addEventListener('click', () => {
+                popup.style.display = 'none';
+                // Remove the event listener to prevent memory leaks
+                closeButton.onclick = null;
+            });
+        }
+
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const productId = button.dataset.productId;
+                // Add your cart logic here
+                const productName = button.closest('.product-card').querySelector('.product-title a').textContent;
+                showPopup(productName);
+            });
+        });
+    </script>
+</body>
+
+</html>

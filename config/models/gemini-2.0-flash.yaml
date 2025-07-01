@@ -1,0 +1,3 @@
+engine_type: gemini
+model: gemini-2.0-flash
+temperature: 1.0

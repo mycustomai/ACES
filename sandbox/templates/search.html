@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Search Results - {{ query }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+    <div class="header">
+        <div class="search-container">
+            <form action="/search" method="get" id="search-form">
+                <input type="text" name="q" value="{{ query }}" id="search" placeholder="Search for products...">
+                <button type="submit">
+                    <span class="search-icon">🔍</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- <div class="sort-container">
+        <select name="sort" onchange="window.location.href='?q={{ query }}&sort=' + this.value">
+            <option value="similarity" {% if current_sort=='similarity' %}selected{% endif %}>Best Match</option>
+            <option value="price_asc" {% if current_sort=='price_asc' %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_desc" {% if current_sort=='price_desc' %}selected{% endif %}>Price: High to Low</option>
+            <option value="rating" {% if current_sort=='rating' %}selected{% endif %}>Avg. Customer Review</option>
+        </select>
+    </div> -->
+
+    <div class="results-container">
+        {% for product in products %}
+        <div class="product-card">
+            <div class="product-image">
+                <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy">
+            </div>
+            <div class="product-info">
+                <h2 class="product-title">{{ product.title }}</h2>
+                <div class="product-rating">
+                    {% set rating = product.rating|float %}
+                    {% for _ in range(rating|int) %}
+                    <span class="star">★</span>
+                    {% endfor %}
+                    {% if (rating % 1) >= 0.5 %}
+                    <span class="star">★</span>
+                    {% endif %}
+                    {% for _ in range(5 - rating|round|int) %}
+                    <span class="star empty">☆</span>
+                    {% endfor %}
+                    <span class="rating-count">({{ product.rating_count }})</span>
+                </div>
+                <div class="product-price">${{ "%.2f"|format(product.price|float) }}</div>
+            </div>
+            <div class="add-to-cart-section">
+                <button class="add-to-cart">Add to Cart</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+
+</html>
