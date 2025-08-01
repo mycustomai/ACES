@@ -1,7 +1,20 @@
-# ACE-v1: Agent E-commerce Environment Codebase
+# ACES: Agentic e-CommercE Simulator
 
-This repository contains the evaluation framework for studying AI agent purchasing behavior in e-commerce environments.
-The system uses browser automation where AI agents interact with a mock Amazon-like website to make purchasing decisions.
+[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+
+ACES is a sandbox environment for studying how autonomous AI agents behave when shopping in e-commerce settings. It pairs a platform-agnostic Vision-Language Model (VLM) agent with a fully programmable mock marketplace to enable controlled experiments on AI shopping behavior.
+
+## Overview
+
+ACES enables researchers to:
+- Test AI agents' basic rationality and instruction-following capabilities
+- Measure product selection patterns and market shares under AI-mediated shopping
+- Study how agents respond to platform design elements (rankings, badges, promotions)
+- Examine strategic dynamics between AI buyers and sellers
+
+The framework consists of:
+- **VLM Shopping Agent**: A browser-based agent that can navigate, evaluate products, and make purchases
+- **Mock E-commerce Platform**: A controllable environment with randomizable product attributes, positions, and promotional elements
 
 ## Getting Started
 
@@ -36,7 +49,7 @@ This project uses `uv` for dependency management and execution.
 
 ### Full ACERS-v1 Evaluation
 
-Run all models on the complete `ACERS-v1`  dataset:
+Run all models on the complete `ACERS-v1` dataset:
 ```bash
 uv run run.py
 ```
@@ -48,10 +61,6 @@ _NOTE: it is recommended to use the [batch runtime](#batch-runtime) for evaluati
 Use the `--subset` argument to run specific portions of `ACERS-v1`:
 
 ```bash
-# Run only sanity check evaluations
-# TODO: `sanity_checks` subset DNE. Do not use.
-uv run run.py --subset sanity_checks
-
 # Run only bias experiments  
 uv run run.py --subset bias_experiments
 
@@ -77,8 +86,6 @@ uv run run.py --exclude gemini-2.5-flash-preview
 uv run run.py --subset sanity_checks --include gpt-4o
 ```
 
-These are mutually exclusive. When using `--exclude`, all other model definitions within `config/models` are loaded.
-
 ### Runtime Types
 
 ACERS-v1 supports two main runtime modes:
@@ -88,49 +95,57 @@ Uses pre-captured screenshots from the dataset for faster evaluation:
 ```bash
 uv run run.py --runtime-type screenshot
 ```
-- **Pros**: Fast execution for small-scale evaluations.
-- **Cons**: Costly, and long turnaround time for large datasets (e.g.: `bias_experiments`).
-
-All providers are evaluated in parallel.
 
 #### Batch Runtime
 Processes experiments in batches using provider-specific batch APIs:
 ```bash
 uv run run.py --runtime-type batch
 ```
-- **Pros**: Cost-effective and faster for large-scale evaluations.
-- **Cons**: Does not provide immediate results.
 
 ### Advanced Options
 
 ```bash
-# Enable debug mode for detailed logging and failing on exceptions
+# Enable debug mode for detailed logging
 uv run run.py --debug
-
-# Use remote screenshot URLs (screenshot runtime only)
-# TODO: document this further. Update code to upload to GCS
-uv run run.py --runtime-type screenshot --remote
 
 # Force resubmission of batches (batch runtime only)
 uv run run.py --runtime-type batch --force-submit
 ```
-
-> TODO: document API key cycling
 
 ## Output
 
 All experiment results are stored in the `experiment_logs/` directory, organized by dataset and model configuration. Results include:
 - Detailed interaction logs and agent reasoning traces  
 - Final purchase decisions
+- Aggregated results in `aggregated_experiment_data.csv`
 
-Results are consolidated per-provider and results are globally aggregated in the `aggregated_experiment_data.csv`
+## Repository Layout
 
-## Advanced Usage
+```
+agent/          # VLM wrapper & tool interface
+sandbox/        # mock storefront (Flask + HTML/CSS)
+experiments/    # datasets, batching & analysis helpers
+config/         # model/provider YAMLs
+run.py          # experiment entry‑point
+```
 
-### Custom Datasets
+## Citation
 
-**[WIP]** Documentation for custom datasets is under development and will be added in future releases.
+If you use ACES in your research, please cite:
 
-### Custom Providers
+```bibtex
+@article{allouah2025aces,
+  title={What is your AI Agent buying? Evaluation, Implications and Emerging Questions for Agentic e-Commerce},
+  author={Allouah, Amine and Besbes, Omar and Figueroa, Josué D and Kanoria, Yash and Kumar, Akshit},
+  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  year={2025}
+}
+```
 
-**[WIP]** Documentation for custom providers is under development and will be added in future releases.
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For questions or issues, please open a GitHub issue or contact the authors through the paper correspondence information.
