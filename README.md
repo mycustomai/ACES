@@ -47,9 +47,16 @@ This project uses `uv` for dependency management and execution.
 
 ## Running Experiments
 
-### Full ACERS-v1 Evaluation
+### Datasets
 
-Run all models on the complete `ACERS-v1` dataset:
+The ACES evaluation datasets are available on Hugging Face:
+
+**ACERS Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACERS
+**ACE-Bias Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-Bias
+
+### Full ACERS Evaluation
+
+Run all models on the complete `ACERS` dataset:
 ```bash
 uv run run.py
 ```
