@@ -58,17 +58,14 @@ _NOTE: it is recommended to use the [batch runtime](#batch-runtime) for evaluati
 
 ### Experiment Subsets
 
-Use the `--subset` argument to run specific portions of `ACERS-v1`:
+Use the `--subset` argument to run specific portions of `ACERS`:
 
 ```bash
 # Run only bias experiments  
-uv run run.py --subset bias_experiments
+uv run run.py --subset price_rationality_check
 
 # Run price sanity checks
-uv run run.py --subset price_sanity_checks
-
-# Run all experiments (default)
-uv run run.py --subset all
+uv run run.py --subset rating_rationality_check
 ```
 
 ### Model Selection
@@ -80,7 +77,7 @@ Use `--include` and `--exclude` to control which models are evaluated:
 uv run run.py --include gpt-4o claude-3.5-sonnet
 
 # Exclude specific models
-uv run run.py --exclude gemini-2.5-flash-preview
+uv run run.py --exclude gemini-2.5-flash
 
 # Combine with subsets
 uv run run.py --subset sanity_checks --include gpt-4o
