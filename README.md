@@ -1,6 +1,6 @@
 # ACES: Agentic e-CommercE Simulator
 
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+[![arXiv](https://img.shields.io/badge/arXiv-2508.02630-b31b1b.svg)](https://arxiv.org/abs/2508.02630)
 
 ACES is a sandbox environment for studying how autonomous AI agents behave when shopping in e-commerce settings. It pairs a platform-agnostic Vision-Language Model (VLM) agent with a fully programmable mock marketplace to enable controlled experiments on AI shopping behavior.
 
