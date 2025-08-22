@@ -89,7 +89,7 @@ def apply_generation(df_group, experiment_id, permutation_only=False, experiment
     df_group.loc[df_group['low_stock'], 'stock_quantity'] = np.random.randint(1, 5, sum(df_group['low_stock']))
     
     # --- 9. Experiment tracking columns ---
-    df_group['experiment_label'] = EXPERIMENT_LABEL
+    df_group['experiment_label'] = experiment_label
     df_group['experiment_number'] = experiment_id
     df_group['position_in_experiment'] = range(len(df_group))
     df_group['assigned_position'] = range(len(df_group))
