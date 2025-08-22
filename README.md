@@ -51,28 +51,49 @@ This project uses `uv` for dependency management and execution.
 
 The ACES evaluation datasets are available on Hugging Face:
 
-**ACERS Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACERS
-**ACE-Bias Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-Bias
+**ACE-BB Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-BB
+**ACE-RS Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-RS
+**ACE-SR Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-SR
 
-### Full ACERS Evaluation
+#### Dataset Configuration
 
-Run all models on the complete `ACERS` dataset:
-```bash
-uv run run.py
-```
-
-_NOTE: it is recommended to use the [batch runtime](#batch-runtime) for evaluating the complete dataset due to cost and speed._
+When running experiments, use the `--hf-dataset` argument with one of these shorthand strings:
+- `"bb"` - Choice Behavior & Biases
+- `"sr"` - Seller's Reaction 
+- `"rs"` - Rationality Suite
 
 ### Experiment Subsets
 
-Use the `--subset` argument to run specific portions of `ACERS`:
+Use the `--subset` argument to run specific experiment types. Valid subset names depend on the dataset:
 
+#### For "bb" (Choice Behavior & Biases):
 ```bash
-# Run only bias experiments  
-uv run run.py --subset price_rationality_check
+# Run choice behavior experiments
+uv run run.py --hf-dataset bb --subset choice_behavior
 
-# Run price sanity checks
-uv run run.py --subset rating_rationality_check
+# Run market share experiments
+uv run run.py --hf-dataset bb --subset market_share
+```
+
+#### For "sr" (Seller's Reaction):
+```bash
+# No subset required - runs title change experiments
+uv run run.py --hf-dataset sr
+```
+
+#### For "rs" (Rationality Suite):
+```bash
+# Run absolute and random price experiments
+uv run run.py --hf-dataset rs --subset absolute_and_random_price
+
+# Run instruction following experiments
+uv run run.py --hf-dataset rs --subset instruction_following
+
+# Run rating experiments
+uv run run.py --hf-dataset rs --subset rating
+
+# Run relative price experiments
+uv run run.py --hf-dataset rs --subset relative_price
 ```
 
 ### Model Selection
@@ -80,14 +101,8 @@ uv run run.py --subset rating_rationality_check
 Use `--include` and `--exclude` to control which models are evaluated:
 
 ```bash
-# Run only specific models (by config filename without extension)
-uv run run.py --include gpt-4o claude-3.5-sonnet
-
-# Exclude specific models
-uv run run.py --exclude gemini-2.5-flash
-
-# Combine with subsets
-uv run run.py --subset sanity_checks --include gpt-4o
+# Combine dataset, subset, and model selection
+uv run run.py --hf-dataset rs --subset rating --include gpt-4o
 ```
 
 ### Runtime Types

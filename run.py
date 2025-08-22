@@ -20,7 +20,14 @@ EXPERIMENT_COUNT_LIMIT = None if os.getenv("EXPERIMENT_COUNT_LIMIT") is None els
 EXPERIMENT_LABEL_FILTER = None
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 RUNTIME_TYPE = os.getenv("RUNTIME_TYPE", "screenshot").lower()
-DEFAULT_HF_DATASET = "My-Custom-AI/ACERS-v1"
+
+DATASET_MAPPING = {
+    "rs": "My-Custom-AI/ACE-RS",
+    "bb": "My-Custom-AI/ACE-BB",
+    "sr": "My-Custom-AI/ACE-SR",
+}
+
+DEFAULT_HF_DATASET = DATASET_MAPPING["rs"]
 
 def parse_args():
     """Parse command line arguments."""
@@ -47,9 +54,16 @@ def parse_args():
 
 async def main():
     args = parse_args()
-    
+
     # Load all model configurations from YAML files
     model_configs = load_all_model_engine_params("config/models", include=args.include, exclude=args.exclude)
+
+    hf_dataset = None
+    if args.hf_dataset:
+        if args.hf_dataset in DATASET_MAPPING:
+            hf_dataset = DATASET_MAPPING[args.hf_dataset]
+        else:
+            hf_dataset = args.hf_dataset
     
     # Create and run the evaluation runtime
     # noinspection PyUnreachableCode
@@ -69,7 +83,7 @@ async def main():
             else:
                 print(f"Using HFHubDatasetRuntime (HuggingFace dataset: {args.hf_dataset})")
                 runtime = HFHubDatasetRuntime(
-                    hf_dataset_name=args.hf_dataset,
+                    hf_dataset_name=hf_dataset,
                     subset=args.subset,
                     engine_params_list=model_configs,
                     max_concurrent_per_engine=MAX_CONCURRENT_MODELS,
@@ -91,7 +105,7 @@ async def main():
         case _:
             print("Using SimpleEvaluationRuntime (browser-based)")
             runtime = SimpleEvaluationRuntime(
-                local_dataset_path=args.dataset,
+                local_dataset_path=args.local_dataset,
                 engine_params_list=model_configs,
                 max_concurrent_models=MAX_CONCURRENT_MODELS,
                 experiment_count_limit=EXPERIMENT_COUNT_LIMIT,
