@@ -16,6 +16,7 @@ from agent.src.typedefs import (
     GeminiParams,
     HuggingFaceParams,
     OpenAIParams,
+    BedrockParams,
 )
 
 
@@ -56,7 +57,9 @@ def load_engine_params_from_yaml(file_path: str) -> EngineParams:
         raise ValueError(f"Invalid engine_type '{engine_type_str}' in {file_path}")
 
     # Dispatch to provider-specific class for validation
-    if engine_type == EngineType.OPENAI:
+    if engine_type == EngineType.BEDROCK:
+        return BedrockParams.from_dict(config_dict)
+    elif engine_type == EngineType.OPENAI:
         return OpenAIParams.from_dict(config_dict)
     elif engine_type == EngineType.ANTHROPIC:
         return AnthropicParams.from_dict(config_dict)
