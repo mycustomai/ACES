@@ -15,6 +15,7 @@ EngineConfigName = NewType('EngineConfigName', str)
 
 class EngineType(StrEnum):
     """Supported LLM engine types."""
+    BEDROCK = "bedrock"
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GEMINI = "gemini"
@@ -32,6 +33,8 @@ class EngineType(StrEnum):
                 return "GOOGLE_API_KEY"
             case EngineType.HUGGINGFACE:
                 return "HUGGINGFACE_API_KEY"
+            case EngineType.BEDROCK:
+                return "AWS_ACCESS_KEY_ID"
         raise ValueError(f"Unknown engine type: {self}")
 
 
@@ -81,6 +84,12 @@ class EngineParams(BaseModel):
     @property
     def config_name(self) -> EngineConfigName:
         return EngineConfigName(f"{self.engine_type}_{self.model}")
+
+
+class BedrockParams(EngineParams):
+    engine_type: EngineType = Field(EngineType.BEDROCK, frozen=True)
+
+    region_name: Optional[str] = Field(None, description="AWS region name")
 
 
 class OpenAIParams(EngineParams):

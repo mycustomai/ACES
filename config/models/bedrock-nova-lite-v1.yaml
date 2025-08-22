@@ -1,0 +1,5 @@
+engine_type: bedrock
+model: amazon.nova-lite-v1:0
+temperature: 1.0
+# optional params
+region_name: us-east-1

@@ -143,7 +143,8 @@ class ExperimentData:
             EngineType.OPENAI: 'OpenAI',
             EngineType.ANTHROPIC: 'Anthropic',
             EngineType.GEMINI: 'Google',
-            EngineType.HUGGINGFACE: 'HuggingFace'
+            EngineType.HUGGINGFACE: 'HuggingFace',
+            EngineType.BEDROCK: "Bedrock",
         }
 
         provider_str = provider_mapping[model_params.engine_type]

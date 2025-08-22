@@ -6,6 +6,7 @@ from warnings import warn
 # noinspection PyProtectedMember
 from langchain_anthropic.chat_models import _format_messages
 from langchain_anthropic import ChatAnthropic
+from langchain_aws import ChatBedrock
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import (
     BaseMessage,
@@ -83,8 +84,27 @@ class LMMAgent:
         
         # Get configuration for API key fallbacks
         config = get_config()
-        
-        if engine_type == EngineType.OPENAI:
+
+        if engine_type == EngineType.BEDROCK:
+            params_dict = params.to_dict()
+
+            bedrock_kwargs = {}
+            for field in ["region_name"]:
+                if field in params_dict and params_dict[field] is not None:
+                    bedrock_kwargs[field] = params_dict[field]
+
+            # noinspection Pydantic
+            return ChatBedrock(
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                aws_access_key_id=config.aws_access_key_id,
+                aws_secret_access_key=config.aws_secret_access_key,
+                aws_session_token=config.aws_session_token,
+                credentials_profile_name=config.aws_credentials_profile_name,
+                region=params.region_name,
+            )
+        elif engine_type == EngineType.OPENAI:
             # Extract OpenAI-specific parameters
             openai_kwargs = {}
             if max_tokens:
