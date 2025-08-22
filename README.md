@@ -60,9 +60,9 @@ This project uses `uv` for dependency management and execution.
 
 The ACES evaluation datasets are available on Hugging Face:
 
-**ACE-BB Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-BB
-**ACE-RS Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-RS
-**ACE-SR Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-SR
+- **ACE-BB Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-BB
+- **ACE-RS Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-RS
+- **ACE-SR Dataset:** https://huggingface.co/datasets/My-Custom-AI/ACE-SR
 
 #### Dataset Configuration
 
