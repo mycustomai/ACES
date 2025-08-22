@@ -44,6 +44,15 @@ This project uses `uv` for dependency management and execution.
   cp .env.sample .env
   # Edit .env with your API keys
   ```
+  
+  For AWS Bedrock models, configure the following environment variables:
+  - `AWS_REGION`: The AWS region where your Bedrock models are available (e.g., `us-east-1`)
+  - `AWS_ACCESS_KEY_ID`: Your AWS access key ID (optional if using default credentials)
+  - `AWS_SECRET_ACCESS_KEY`: Your AWS secret access key (optional if using default credentials)
+  - `AWS_SESSION_TOKEN`: AWS session token for temporary credentials (optional)
+  - `AWS_CREDENTIALS_PROFILE_NAME`: AWS profile name if using AWS SSO or named profiles (optional)
+  
+  If no AWS credentials are provided in the `.env` file, the default AWS credential chain will be used (e.g., IAM role, AWS CLI configuration, or environment variables).
 
 ## Running Experiments
 
