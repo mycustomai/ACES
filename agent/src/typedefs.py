@@ -33,6 +33,8 @@ class EngineType(StrEnum):
                 return "GOOGLE_API_KEY"
             case EngineType.HUGGINGFACE:
                 return "HUGGINGFACE_API_KEY"
+            case EngineType.BEDROCK:
+                return "AWS_ACCESS_KEY_ID"
         raise ValueError(f"Unknown engine type: {self}")
 
 

@@ -87,12 +87,21 @@ class LMMAgent:
 
         if engine_type == EngineType.BEDROCK:
             params_dict = params.to_dict()
+
+            bedrock_kwargs = {}
+            for field in ["region_name"]:
+                if field in params_dict and params_dict[field] is not None:
+                    bedrock_kwargs[field] = params_dict[field]
+
             # noinspection Pydantic
             return ChatBedrock(
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **params_dict,
+                aws_access_key_id=config.aws_access_key_id.get_secret_value() if config.aws_access_key_id else None,
+                aws_secret_access_key=config.aws_secret_access_key.get_secret_value() if config.aws_secret_access_key else None,
+                aws_session_token=config.aws_session_token.get_secret_value() if config.aws_session_token else None,
+                region=params.region_name
             )
         elif engine_type == EngineType.OPENAI:
             # Extract OpenAI-specific parameters

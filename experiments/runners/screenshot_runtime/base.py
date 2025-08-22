@@ -220,7 +220,7 @@ class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
             engines=self.engine_params_list,
             create_environment_fn=self.create_shopping_environment,
             run_single_experiment_fn=self.run_single_experiment,
-            distributed_engines=self.distributed_engine_params,
+            #distributed_engines=self.distributed_engine_params,
             experiment_count_limit=self.experiment_count_limit,
             experiment_label_filter=self.experiment_label_filter,
         )
@@ -254,9 +254,6 @@ class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
                 params_copy = EngineParams(
                     engine_type=engine_params.engine_type,
                     model=engine_params.model,
-                    config_name=f"{engine_params.config_name}_key_{i + 1}"
-                    if len(api_keys) > 1
-                    else engine_params.config_name,
                     api_key=api_key,
                     temperature=engine_params.temperature,
                     max_new_tokens=engine_params.max_new_tokens,
