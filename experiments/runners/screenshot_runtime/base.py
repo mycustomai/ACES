@@ -220,6 +220,7 @@ class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
             engines=self.engine_params_list,
             create_environment_fn=self.create_shopping_environment,
             run_single_experiment_fn=self.run_single_experiment,
+            # TODO: remove all distributed engine functionality. See https://github.com/mycustomai/ACES/issues/9
             #distributed_engines=self.distributed_engine_params,
             experiment_count_limit=self.experiment_count_limit,
             experiment_label_filter=self.experiment_label_filter,
