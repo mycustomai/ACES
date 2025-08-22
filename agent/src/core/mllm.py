@@ -98,10 +98,11 @@ class LMMAgent:
                 model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                aws_access_key_id=config.aws_access_key_id.get_secret_value() if config.aws_access_key_id else None,
-                aws_secret_access_key=config.aws_secret_access_key.get_secret_value() if config.aws_secret_access_key else None,
-                aws_session_token=config.aws_session_token.get_secret_value() if config.aws_session_token else None,
-                region=params.region_name
+                aws_access_key_id=config.aws_access_key_id,
+                aws_secret_access_key=config.aws_secret_access_key,
+                aws_session_token=config.aws_session_token,
+                credentials_profile_name=config.aws_credentials_profile_name,
+                region=params.region_name,
             )
         elif engine_type == EngineType.OPENAI:
             # Extract OpenAI-specific parameters

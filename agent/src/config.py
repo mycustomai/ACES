@@ -24,8 +24,8 @@ class Config(BaseSettings):
     huggingfacehub_api_token: Optional[SecretStr] = Field(None, description="HuggingFace Hub API token")
     aws_access_key_id: Optional[SecretStr] = Field(None, description="Bedrock Access Key ID")
     aws_secret_access_key: Optional[SecretStr] = Field(None, description="Bedrock Secret Access Key")
-    # Not required unless using temporary credentials.
     aws_session_token: Optional[SecretStr] = Field(None, description="Bedrock Session Token")
+    aws_credentials_profile_name: Optional[str] = Field(None, description="AWS credentials profile name")
     
     # Runtime options
     continue_or_exit_wait_delay: int = Field(5, description="Delay in seconds to wait before continuing the experiment after a keyboard interrupt")
