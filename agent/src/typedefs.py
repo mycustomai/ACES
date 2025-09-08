@@ -112,7 +112,7 @@ class AnthropicParams(EngineParams):
     model: str = Field(..., description="Anthropic model name (e.g., claude-3-sonnet-20240229)")
     
     # Anthropic-specific fields
-    thinking: bool = Field(False, description="Enable thinking mode for Claude")
+    thinking: Optional[dict[str, Any]] = Field(None, description="Thinking mode config for Claude")
     top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     top_k: Optional[int] = Field(None, gt=0, description="Top-k sampling parameter")
 
