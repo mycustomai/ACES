@@ -8,7 +8,7 @@ from agent.src.typedefs import EngineParams
 from common.messages import RawMessageExchange
 from experiments.config import ExperimentData
 from experiments.filesystem_environment import FilesystemShoppingEnvironment
-from experiments.runners.batch_new.typedefs import ExperimentResult
+from experiments.runners.batch_runtime.typedefs import ExperimentResult
 from experiments.utils.dataset_ops import get_dataset_name
 
 

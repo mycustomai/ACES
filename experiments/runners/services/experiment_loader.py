@@ -5,7 +5,7 @@ import pandas as pd
 from agent.src.typedefs import EngineConfigName, EngineParams
 from experiments.config import ExperimentId
 from experiments.data_loader import ExperimentData, experiments_iter
-from experiments.runners.batch_new.common.encoded_id_mixin import \
+from experiments.runners.batch_runtime.common.encoded_id_mixin import \
     EncodedExperimentIdMixin
 from experiments.utils.dataset_ops import get_dataset_name
 

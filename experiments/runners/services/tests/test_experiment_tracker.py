@@ -7,9 +7,9 @@ from pydantic import SecretStr
 
 from agent.src.typedefs import EngineConfigName, EngineParams, EngineType
 from experiments.config import ExperimentId
-from experiments.runners.batch_new.typedefs import (BatchStatus,
-                                                    ExperimentSubmissionRecord,
-                                                    ProviderBatchId)
+from experiments.runners.batch_runtime.typedefs import (BatchStatus,
+                                                        ExperimentSubmissionRecord,
+                                                        ProviderBatchId)
 from experiments.runners.services.experiment_tracker import ExperimentTracker
 
 

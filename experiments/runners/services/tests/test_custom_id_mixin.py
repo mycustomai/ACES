@@ -1,7 +1,7 @@
 import pytest
 
 from experiments.config import ExperimentId
-from experiments.runners.batch_new.common.encoded_id_mixin import \
+from experiments.runners.batch_runtime.common.encoded_id_mixin import \
     EncodedExperimentIdMixin
 
 

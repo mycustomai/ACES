@@ -5,13 +5,13 @@ from typing import Iterable
 
 from agent.src.typedefs import EngineConfigName, EngineParams
 from experiments.config import ExperimentId
-from experiments.runners.batch_new.common.encoded_id_mixin import \
+from experiments.runners.batch_runtime.common.encoded_id_mixin import \
     EncodedExperimentIdMixin
-from experiments.runners.batch_new.typedefs import (BatchStatus,
-                                                    ExperimentFailureModes,
-                                                    ExperimentResult,
-                                                    ExperimentSubmissionRecord,
-                                                    ProviderBatchId)
+from experiments.runners.batch_runtime.typedefs import (BatchStatus,
+                                                        ExperimentFailureModes,
+                                                        ExperimentResult,
+                                                        ExperimentSubmissionRecord,
+                                                        ProviderBatchId)
 
 
 class ExperimentTracker:
