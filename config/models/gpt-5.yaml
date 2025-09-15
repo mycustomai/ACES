@@ -1,3 +1,4 @@
 engine_type: openai
-model: gpt-5-chat-latest
+model: gpt-5
 temperature: 1.0
+reasoning_effort: minimal
