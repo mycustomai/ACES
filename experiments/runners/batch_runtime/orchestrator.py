@@ -64,6 +64,9 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
 
         dataset_path = self.experiment_loader.dataset_path
         self.dataset_path = dataset_path
+        self.remote = remote
+        self.hf_dataset_name = hf_dataset_name
+        self.hf_subset = hf_subset
 
         self.screenshot_validator: Optional[ScreenshotValidationService] = None
         if self.screenshots_dir is not None:
@@ -74,22 +77,20 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             )
 
         self.screenshot_manager: Optional[GCSManager] = None
-        if self.experiment_loader.requires_gcs_upload():
-            if dataset_path is None:
-                raise ValueError(
-                    "Local dataset path required when screenshots need GCS upload"
-                )
+        if self.remote:
             self.screenshot_manager = GCSManager(
                 local_dataset_path=dataset_path,
-            )
-
-        if dataset_path is None:
-            raise ValueError(
-                "BatchOrchestratorRuntime currently requires a local dataset path"
+                hf_dataset_name=hf_dataset_name,
+                hf_subset=hf_subset,
             )
         self.simulator = AgentSimulator(
+            dataset_name=self.dataset_name,
             local_dataset_path=dataset_path,
+            hf_dataset_name=hf_dataset_name,
+            hf_subset=hf_subset,
+            screenshots_dir=self.screenshots_dir,
             run_output_dir=self.run_output_dir,
+            use_remote=self.remote,
             verbose=self.debug_mode,
         )
 
