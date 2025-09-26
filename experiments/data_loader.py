@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Optional
 import pandas as pd
 from datasets import load_dataset, Image
 
@@ -70,7 +70,7 @@ def load_experiment_data(csv_path: str) -> pd.DataFrame:
     return pd.read_csv(csv_path)
 
 
-def hf_experiments_iter(dataset_name: str, subset: str = "all", split: str = "data") -> Iterable[ExperimentData]:
+def hf_experiments_iter(dataset_name: str, subset: Optional[str] = None, split: str = "data") -> Iterable[ExperimentData]:
     """
     Load a HuggingFace dataset and iterate over experiments.
     
@@ -87,7 +87,10 @@ def hf_experiments_iter(dataset_name: str, subset: str = "all", split: str = "da
         ExperimentData: Experiment configuration with expanded DataFrame
     """
     # Load the dataset
-    dataset = load_dataset(dataset_name, subset, split=split)
+    if subset is None:
+        dataset = load_dataset(dataset_name, split=split)
+    else:
+        dataset = load_dataset(dataset_name, subset, split=split)
     
     for row in dataset:
         # Extract scalar values

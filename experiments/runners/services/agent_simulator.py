@@ -30,7 +30,7 @@ class AgentSimulator:
         use_remote: bool,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
-        hf_subset: str = "all",
+        hf_subset: Optional[str] = None,
         screenshots_dir: Optional[Path] = None,
         verbose: bool = False,
     ):

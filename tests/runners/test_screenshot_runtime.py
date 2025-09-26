@@ -115,7 +115,7 @@ class TestScreenshotRuntime:
                 experiment_count_limit=None,
                 local_dataset_path=str(dataset_path),
                 hf_dataset_name=None,
-                hf_subset="all",
+                hf_subset=None,
             )
             loader_cls.assert_called_once_with(**expected_call)
             validation_cls.assert_called_once_with(
