@@ -16,7 +16,6 @@ load_dotenv()
 
 # Configuration for parallel execution
 MAX_CONCURRENT_MODELS = int(os.getenv("MAX_CONCURRENT_MODELS", "20"))
-EXPERIMENT_COUNT_LIMIT = None if os.getenv("EXPERIMENT_COUNT_LIMIT") is None else int(os.getenv("EXPERIMENT_COUNT_LIMIT"))
 EXPERIMENT_LABEL_FILTER = None
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 RUNTIME_TYPE = os.getenv("RUNTIME_TYPE", "screenshot").lower()
@@ -129,7 +128,7 @@ async def main():
                 engine_params_list=model_configs,
                 remote=args.remote,
                 max_concurrent_per_engine=MAX_CONCURRENT_MODELS,
-                experiment_count_limit=EXPERIMENT_COUNT_LIMIT,
+                experiment_count_limit=args.experiment_count_limit,
                 experiment_label_filter=EXPERIMENT_LABEL_FILTER,
                 debug_mode=args.debug,
                 local_dataset_path=args.local_dataset,
@@ -156,7 +155,7 @@ async def main():
                 local_dataset_path=args.local_dataset,
                 engine_params_list=model_configs,
                 max_concurrent_models=MAX_CONCURRENT_MODELS,
-                experiment_count_limit=EXPERIMENT_COUNT_LIMIT,
+                experiment_count_limit=args.experiment_count_limit,
                 experiment_label_filter=EXPERIMENT_LABEL_FILTER,
                 debug_mode=args.debug
             )
