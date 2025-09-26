@@ -41,7 +41,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         monitor_interval: int = DEFAULT_MONITOR_INTERVAL,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
-        hf_subset: str = "all",
+        hf_subset: Optional[str] = None,
     ):
         """Initialize the simplified BatchEvaluationRuntime."""
         self.experiment_loader = ExperimentLoader(

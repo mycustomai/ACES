@@ -35,7 +35,7 @@ class ScreenshotRuntime(BaseEvaluationRuntime):
         debug_mode: bool = False,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
-        hf_subset: str = "all",
+        hf_subset: Optional[str] = None,
     ):
         """
         Initialize the unified screenshot runtime.

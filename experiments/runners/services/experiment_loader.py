@@ -64,7 +64,7 @@ class _LocalDatasetSource(_DatasetSource):
 class _HFDatasetSource(_DatasetSource):
     """HuggingFace Hub dataset with embedded screenshots."""
 
-    def __init__(self, hf_dataset_name: str, subset: str = 'all'):
+    def __init__(self, hf_dataset_name: str, subset: Optional[str] = None):
         self.hf_dataset_name = hf_dataset_name
         self.subset = subset
         self._dataset_name = f"{hf_dataset_name.replace('/', '_')}_{subset}"
@@ -99,7 +99,7 @@ class ExperimentLoader(EncodedExperimentIdMixin):
         experiment_count_limit: Optional[int] = None,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
-        hf_subset: str = 'all',
+        hf_subset: Optional[str] = None,
     ):
         if local_dataset_path and hf_dataset_name:
             raise ValueError(
