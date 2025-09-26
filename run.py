@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from experiments.engine_loader import load_all_model_engine_params
 from experiments.runners import (
-    BatchEvaluationRuntime,
+    BatchOrchestratorRuntime,
     HFHubDatasetRuntime,
     LocalDatasetRuntime,
     SimpleEvaluationRuntime,
@@ -32,23 +32,25 @@ DEFAULT_HF_DATASET = DATASET_MAPPING["rs"]
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='AI Agent Impact Evaluation')
-    parser.add_argument('--runtime-type', choices=['simple', 'screenshot', 'batch'], 
-                       default=RUNTIME_TYPE, help='Runtime type to use')
+    parser.add_argument('--runtime-type', choices=['simple', 'screenshot', 'batch'],
+                        default=RUNTIME_TYPE, help='Runtime type to use')
     parser.add_argument('--local-dataset', type=str,
-                       help='Local dataset path')
+                        help='Local dataset path')
     parser.add_argument('--hf-dataset', type=str, default=DEFAULT_HF_DATASET,
                         help=f"Hugging Face dataset name to use (e.g., \"{DEFAULT_HF_DATASET}\")")
     parser.add_argument('--subset', type=str,
                         help="Subset of ACERS dataset to use (e.g., 'sanity_checks', 'bias_experiments', 'all'). View dataset card for more details.",
                         default="all")
     parser.add_argument('--debug', action='store_true', default=DEBUG_MODE,
-                       help='Enable debug mode')
+                        help='Enable debug mode')
     parser.add_argument('--remote', action='store_true', default=False,
-                       help='Use remote GCS URLs instead of local screenshot bytes (screenshot runtime only)')
+                        help='Use remote GCS URLs instead of local screenshot bytes (screenshot and batch runtimes)')
     parser.add_argument('--include', nargs='+', help='Include only specified model configurations (by filename without extension)')
     parser.add_argument('--exclude', nargs='+', help='Exclude specified model config (by filename without extension)')
     parser.add_argument('--force-submit', action='store_true', default=False,
-                       help='Force resubmission of batches, overriding submitted experiments tracking (batch runtime only)')
+                        help='Force resubmission of batches, overriding submitted experiments tracking (batch runtime only)')
+    parser.add_argument('--experiment-count-limit', type=int, default=None,
+                        help='Maximum number of experiments to run (for debugging)')
     return parser.parse_args()
 
 
@@ -94,14 +96,15 @@ async def main():
             await runtime.run()
         case "batch":
             print("Using BatchEvaluationRuntime (for Batch processing APIs)")
-            runtime = BatchEvaluationRuntime(
+            runtime = BatchOrchestratorRuntime(
                 local_dataset_path=args.local_dataset,
                 engine_params_list=model_configs,
-                experiment_count_limit=EXPERIMENT_COUNT_LIMIT,
+                experiment_count_limit=args.experiment_count_limit,
                 debug_mode=args.debug,
                 force_submit=args.force_submit,
+                remote=args.remote,
             )
-            await runtime.run()
+            runtime.run()
         case _:
             print("Using SimpleEvaluationRuntime (browser-based)")
             runtime = SimpleEvaluationRuntime(

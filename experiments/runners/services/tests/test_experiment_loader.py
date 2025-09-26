@@ -5,7 +5,7 @@ import pytest
 
 from agent.src.typedefs import EngineConfigName, EngineParams, EngineType
 from experiments.config import ExperimentData, ExperimentId
-from experiments.runners.batch_new.common.encoded_id_mixin import \
+from experiments.runners.batch_runtime.common.encoded_id_mixin import \
     EncodedExperimentIdMixin
 from experiments.runners.services.experiment_loader import ExperimentLoader
 
