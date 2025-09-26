@@ -55,4 +55,8 @@ class OpenAIBatchProviderSerializer(BaseBatchProviderSerializer):
             batch_request["body"]["tools"] = tools
             batch_request["body"]["tool_choice"] = "auto"
 
+        reasoning_effort = getattr(engine_params, "reasoning_effort", None)
+        if reasoning_effort is not None:
+            batch_request["body"]["reasoning_effort"] = reasoning_effort
+
         return ProviderBatchRequest(batch_request)
