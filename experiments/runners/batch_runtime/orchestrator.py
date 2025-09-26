@@ -2,6 +2,7 @@ import json
 import time
 from copy import copy
 from itertools import chain
+from pathlib import Path
 from time import sleep
 from typing import List, Optional
 
@@ -55,7 +56,10 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
 
         super().__init__(dataset_name, output_dir_override, debug_mode)
 
+        self._hf_materialized_dir: Optional[Path] = None
         self.screenshots_dir = self.experiment_loader.screenshots_dir
+        if self.screenshots_dir is None:
+            self.screenshots_dir = self._materialize_hf_screenshots()
 
         self.experiment_tracker = ExperimentTracker(
             engine_params_list=engine_params_list,
@@ -78,10 +82,11 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
 
         self.screenshot_manager: Optional[GCSManager] = None
         if self.remote:
+            if self.screenshots_dir is None:
+                self.screenshots_dir = self._materialize_hf_screenshots()
             self.screenshot_manager = GCSManager(
-                local_dataset_path=dataset_path,
-                hf_dataset_name=hf_dataset_name,
-                hf_subset=hf_subset,
+                dataset_name=self.dataset_name,
+                screenshots_dir=self.screenshots_dir,
             )
         self.simulator = AgentSimulator(
             dataset_name=self.dataset_name,
@@ -99,6 +104,44 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         self.experiment_count_limit = experiment_count_limit
 
         self._setup_provider_tools()
+
+    def _materialize_hf_screenshots(self) -> Path:
+        """Persist screenshots from a HuggingFace dataset to the filesystem."""
+        if self._hf_materialized_dir is not None:
+            return self._hf_materialized_dir
+
+        base_dir = self.run_output_dir / "materialized_screenshots"
+        dataset_dir = base_dir / self.dataset_name
+        dataset_dir.mkdir(parents=True, exist_ok=True)
+
+        for experiment in self.experiment_loader.experiments:
+            screenshot = getattr(experiment, "screenshot", None)
+            if screenshot is None:
+                raise ValueError(
+                    "HuggingFace dataset missing embedded screenshot for experiment"
+                )
+
+            target_path = experiment.get_local_screenshot_path(base_dir)
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            if target_path.exists():
+                continue
+
+            if isinstance(screenshot, bytes):
+                target_path.write_bytes(screenshot)
+            elif hasattr(screenshot, "save"):
+                screenshot.save(target_path, format="PNG")
+            elif hasattr(screenshot, "to_pil"):
+                screenshot.to_pil().save(target_path, format="PNG")
+            elif isinstance(screenshot, dict) and "bytes" in screenshot:
+                target_path.write_bytes(screenshot["bytes"])
+            else:
+                raise TypeError(
+                    "Unsupported screenshot payload type for HuggingFace dataset"
+                )
+
+        self._hf_materialized_dir = base_dir
+        return base_dir
 
     def _setup_provider_tools(self) -> None:
         self.provider_deserializers: dict[EngineConfigName, base.Deserializer] = {}

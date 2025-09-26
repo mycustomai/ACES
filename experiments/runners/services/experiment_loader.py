@@ -41,9 +41,7 @@ class _LocalDatasetSource(_DatasetSource):
     def __init__(self, local_dataset_path: str):
         self.local_dataset_path = local_dataset_path
         self._dataset_name = get_dataset_name(local_dataset_path)
-        self._screenshots_dir = (
-            Path(local_dataset_path).parent / 'screenshots' / self._dataset_name
-        )
+        self._screenshots_dir = Path(local_dataset_path).parent / 'screenshots'
 
     def get_dataset_name(self) -> str:
         return self._dataset_name

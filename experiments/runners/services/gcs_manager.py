@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Iterable, List
 
 from google.cloud import storage
 from pydantic import BaseModel
@@ -9,7 +9,6 @@ from rich import print as _print
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
 from experiments.config import ExperimentData
-from experiments.utils.dataset_ops import get_dataset_name
 
 
 class _UploadTask(BaseModel):
@@ -27,31 +26,12 @@ class GCSManager:
 
     def __init__(
         self,
-        local_dataset_path: Optional[str] = None,
-        hf_dataset_name: Optional[str] = None,
-        hf_subset: str = "all",
+        dataset_name: str,
+        screenshots_dir: Path,
         max_workers: int = 16,
     ):
-        # TODO: this needs to be self-contained in a dataset manager class so as to decouple local dataset vs hf dataset.
-        #  this class may be passed in on object initialization
-        if not local_dataset_path and not hf_dataset_name:
-            raise ValueError(
-                "GCSManager requires either a local_dataset_path or hf_dataset_name"
-            )
-
-        self.local_dataset_path = local_dataset_path
-        self.hf_dataset_name = hf_dataset_name
-        self.hf_subset = hf_subset
-
-        if local_dataset_path:
-            self.dataset_name = get_dataset_name(local_dataset_path)
-            dataset_dir = Path(local_dataset_path).parent
-            self.screenshots_dir = dataset_dir / "screenshots"
-        else:
-            assert hf_dataset_name is not None  # Narrow type for mypy
-            self.dataset_name = f"{hf_dataset_name.replace('/', '_')}_{hf_subset}"
-            self.screenshots_dir = None
-
+        self.dataset_name = dataset_name
+        self.screenshots_dir = Path(screenshots_dir)
         self.max_workers = max_workers
 
         self.bucket_name = os.getenv("GCS_BUCKET_NAME")
@@ -68,10 +48,6 @@ class GCSManager:
     def upload(
         self, experiments: Iterable[List[ExperimentData]], verbose: bool = False
     ):
-        if self.screenshots_dir is None:
-            raise ValueError(
-                "Uploading screenshots for HuggingFace datasets is not yet supported"
-            )
         uploaded_screenshot_paths = set(self._list_uploaded_screenshots())
         if verbose:
             _print(
@@ -96,7 +72,6 @@ class GCSManager:
     ) -> list[_UploadTask]:
         tasks: list[_UploadTask] = []
         for data in experiments:
-            # TODO: create temp path if using hf dataset
             experiments_path = data.get_local_screenshot_path(self.screenshots_dir)
             if not experiments_path.exists():
                 raise FileNotFoundError(

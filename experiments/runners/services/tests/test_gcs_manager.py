@@ -1,11 +1,11 @@
 import os
 from concurrent.futures import Future
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from experiments.config import ExperimentData, InstructionConfig
+from experiments.config import ExperimentData
 from experiments.runners.services.gcs_manager import GCSManager, _UploadTask
 
 
@@ -54,54 +54,49 @@ class TestGCSManager:
     def gcs_manager(self, env_vars, mock_storage_client):
         """Create GCSManager instance with mocked dependencies."""
         mock_client, mock_bucket = mock_storage_client
-        with patch(
-            "experiments.runners.services.gcs_manager.get_dataset_name",
-            return_value="mousepad",
-        ):
-            manager = GCSManager(
-                local_dataset_path="/path/to/mousepad_dataset.csv", max_workers=2
-            )
-            manager._bucket = mock_bucket
-            return manager
+        manager = GCSManager(
+            dataset_name="mousepad",
+            screenshots_dir=Path("/local/screenshots"),
+            max_workers=2,
+        )
+        manager._bucket = mock_bucket
+        return manager
 
     def test_init_success(self, env_vars, mock_storage_client):
         """Test successful initialization."""
         mock_client, mock_bucket = mock_storage_client
 
-        with patch(
-            "experiments.runners.services.gcs_manager.get_dataset_name",
-            return_value="mousepad",
-        ):
-            manager = GCSManager(
-                local_dataset_path="/path/to/mousepad_dataset.csv", max_workers=8
-            )
+        manager = GCSManager(
+            dataset_name="mousepad",
+            screenshots_dir=Path("/local/screenshots"),
+            max_workers=8,
+        )
 
-            assert manager.dataset_name == "mousepad"
-            assert manager.local_dataset_path == "/path/to/mousepad_dataset.csv"
-            assert manager.max_workers == 8
-            assert manager.bucket_name == "test-bucket"
-            assert manager.project_id == "test-project"
-            mock_client.assert_called_once_with(project="test-project")
+        assert manager.dataset_name == "mousepad"
+        assert manager.screenshots_dir == Path("/local/screenshots")
+        assert manager.max_workers == 8
+        assert manager.bucket_name == "test-bucket"
+        assert manager.project_id == "test-project"
+        mock_client.assert_called_once_with(project="test-project")
 
     def test_init_missing_bucket_name(self):
         """Test initialization fails when GCS_BUCKET_NAME is not set."""
         with patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError, match="GCS bucket name must be provided"):
-                GCSManager(local_dataset_path="/path/to/dataset.csv")
+                GCSManager(dataset_name="mousepad", screenshots_dir=Path("/tmp"))
 
     def test_init_with_default_project(self, mock_storage_client):
         """Test initialization with default project (None)."""
         mock_client, mock_bucket = mock_storage_client
 
         with patch.dict(os.environ, {"GCS_BUCKET_NAME": "test-bucket"}):
-            with patch(
-                "experiments.runners.services.gcs_manager.get_dataset_name",
-                return_value="mousepad",
-            ):
-                manager = GCSManager(local_dataset_path="/path/to/mousepad_dataset.csv")
+            manager = GCSManager(
+                dataset_name="mousepad",
+                screenshots_dir=Path("/local/screenshots"),
+            )
 
-                assert manager.project_id is None
-                mock_client.assert_called_once_with(project=None)
+            assert manager.project_id is None
+            mock_client.assert_called_once_with(project=None)
 
     def test_upload_no_new_screenshots(self, gcs_manager, mock_experiment_data):
         """Test upload when all screenshots are already uploaded."""
@@ -334,11 +329,10 @@ class TestGCSManager:
 
     def test_screenshots_dir_calculation(self, env_vars, mock_storage_client):
         """Test that screenshots directory is calculated correctly."""
-        with patch(
-            "experiments.runners.services.gcs_manager.get_dataset_name",
-            return_value="mousepad",
-        ):
-            manager = GCSManager(local_dataset_path="/path/to/mousepad_dataset.csv")
+        manager = GCSManager(
+            dataset_name="mousepad",
+            screenshots_dir=Path("/path/to/screenshots"),
+        )
 
-            expected_screenshots_dir = Path("/path/to/screenshots")
-            assert manager.screenshots_dir == expected_screenshots_dir
+        expected_screenshots_dir = Path("/path/to/screenshots")
+        assert manager.screenshots_dir == expected_screenshots_dir
