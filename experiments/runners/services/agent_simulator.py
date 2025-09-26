@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from langchain_core.messages import AIMessage
 
@@ -9,7 +10,6 @@ from common.messages import RawMessageExchange
 from experiments.config import ExperimentData
 from experiments.filesystem_environment import FilesystemShoppingEnvironment
 from experiments.runners.batch_runtime.typedefs import ExperimentResult
-from experiments.utils.dataset_ops import get_dataset_name
 
 
 class AgentSimulator:
@@ -20,21 +20,31 @@ class AgentSimulator:
     - Processing results from batch and saving to filesystem
 
     Note:
-        - Class assumes `use_remote` is True for all experiments, requiring preliminary screenshot generation and upload.
+        - When `use_remote` is True, callers must ensure screenshots are available remotely (for example via GCS upload) before processing results.
     """
 
     def __init__(
         self,
-        local_dataset_path: str,
+        dataset_name: str,
         run_output_dir: Path,
-        use_remote: bool = True,
+        local_dataset_path: Optional[str] = None,
+        hf_dataset_name: Optional[str] = None,
+        hf_subset: str = "all",
+        screenshots_dir: Optional[Path] = None,
+        use_remote: bool = False,
         verbose: bool = False,
     ):
-        # TODO: duplicated. Pass in via self-contained object
-        self.dataset_name = get_dataset_name(local_dataset_path)
-        dataset_dir = Path(local_dataset_path).parent
-        self.screenshots_dir = dataset_dir / "screenshots"
+        self.dataset_name = dataset_name
         self.local_dataset_path = local_dataset_path
+        self.hf_dataset_name = hf_dataset_name
+        self.hf_subset = hf_subset
+        if screenshots_dir is not None:
+            self.screenshots_dir = screenshots_dir
+        elif local_dataset_path is not None:
+            dataset_dir = Path(local_dataset_path).parent
+            self.screenshots_dir = dataset_dir / "screenshots"
+        else:
+            self.screenshots_dir = None
 
         self.run_output_dir = run_output_dir
         self.use_remote = use_remote
@@ -46,6 +56,10 @@ class AgentSimulator:
         engine_params: EngineParams,
         persistence: bool = False,
     ) -> SimulatedShopper:
+        if self.screenshots_dir is None:
+            raise ValueError(
+                "Screenshots directory is required to bootstrap the filesystem environment"
+            )
         environment = FilesystemShoppingEnvironment(
             screenshots_dir=self.screenshots_dir,
             query=experiment.query,

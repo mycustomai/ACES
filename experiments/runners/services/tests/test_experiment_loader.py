@@ -92,8 +92,7 @@ class TestExperimentLoader:
         )
         assert loader.dataset_path == "/path/to/mousepad_dataset.csv"
         assert loader.dataset_name == "mousepad"
-        assert loader.screenshots_dir == Path("/path/to") / "screenshots" / "mousepad"
-        assert loader.requires_gcs_upload()
+        assert loader.screenshots_dir == Path("/path/to") / "screenshots"
         assert isinstance(loader.experiments, set)
         mock_load_local_dataset.assert_called_once_with(None)
 
@@ -133,9 +132,8 @@ class TestExperimentLoader:
         mock_experiments_iter.assert_called_once_with(mock_df, "mousepad")
         assert result == mock_experiment_data
         assert source.get_dataset_name() == "mousepad"
-        assert source.get_screenshots_dir() == Path("/path/to") / "screenshots" / "mousepad"
+        assert source.get_screenshots_dir() == Path("/path/to") / "screenshots"
         assert source.get_dataset_path() == "/path/to/mousepad_dataset.csv"
-        assert source.requires_gcs_upload()
 
         mock_read_csv.reset_mock()
         mock_experiments_iter.reset_mock()
@@ -161,7 +159,6 @@ class TestExperimentLoader:
         assert source.get_dataset_name() == "org_dataset_test"
         assert source.get_screenshots_dir() is None
         assert source.get_dataset_path() is None
-        assert not source.requires_gcs_upload()
 
         mock_hf_iter.reset_mock()
         limited = source.load_experiments(experiment_count_limit=1)

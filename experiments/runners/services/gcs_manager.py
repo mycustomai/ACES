@@ -9,7 +9,6 @@ from rich import print as _print
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
 from experiments.config import ExperimentData
-from experiments.utils.dataset_ops import get_dataset_name
 
 
 class _UploadTask(BaseModel):
@@ -27,16 +26,12 @@ class GCSManager:
 
     def __init__(
         self,
-        local_dataset_path: str,
+        dataset_name: str,
+        screenshots_dir: Path,
         max_workers: int = 16,
     ):
-        # TODO: this needs to be self-contained in a dataset manager class so as to decouple local dataset vs hf dataset.
-        #  this class may be passed in on object initialization
-        self.dataset_name = get_dataset_name(local_dataset_path)
-        dataset_dir = Path(local_dataset_path).parent
-        self.screenshots_dir = dataset_dir / "screenshots"
-        self.local_dataset_path = local_dataset_path
-
+        self.dataset_name = dataset_name
+        self.screenshots_dir = Path(screenshots_dir)
         self.max_workers = max_workers
 
         self.bucket_name = os.getenv("GCS_BUCKET_NAME")
@@ -77,7 +72,6 @@ class GCSManager:
     ) -> list[_UploadTask]:
         tasks: list[_UploadTask] = []
         for data in experiments:
-            # TODO: create temp path if using hf dataset
             experiments_path = data.get_local_screenshot_path(self.screenshots_dir)
             if not experiments_path.exists():
                 raise FileNotFoundError(

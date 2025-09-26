@@ -35,20 +35,13 @@ class _DatasetSource(ABC):
     def get_dataset_path(self) -> Optional[str]:
         """Return the local dataset path when available."""
 
-    @abstractmethod
-    def requires_gcs_upload(self) -> bool:
-        """Whether screenshots from this source should be uploaded to GCS."""
-
-
 class _LocalDatasetSource(_DatasetSource):
     """Local CSV dataset with filesystem screenshots."""
 
     def __init__(self, local_dataset_path: str):
         self.local_dataset_path = local_dataset_path
         self._dataset_name = get_dataset_name(local_dataset_path)
-        self._screenshots_dir = (
-            Path(local_dataset_path).parent / 'screenshots' / self._dataset_name
-        )
+        self._screenshots_dir = Path(local_dataset_path).parent / 'screenshots'
 
     def get_dataset_name(self) -> str:
         return self._dataset_name
@@ -67,10 +60,6 @@ class _LocalDatasetSource(_DatasetSource):
 
     def get_dataset_path(self) -> Optional[str]:
         return self.local_dataset_path
-
-    def requires_gcs_upload(self) -> bool:
-        return True
-
 
 class _HFDatasetSource(_DatasetSource):
     """HuggingFace Hub dataset with embedded screenshots."""
@@ -100,10 +89,6 @@ class _HFDatasetSource(_DatasetSource):
 
     def get_dataset_path(self) -> Optional[str]:
         return None
-
-    def requires_gcs_upload(self) -> bool:
-        return False
-
 
 class ExperimentLoader(EncodedExperimentIdMixin):
     """Universal experiment loader supporting local and HuggingFace datasets."""
@@ -148,9 +133,6 @@ class ExperimentLoader(EncodedExperimentIdMixin):
     @property
     def dataset_path(self) -> Optional[str]:
         return self._source.get_dataset_path()
-
-    def requires_gcs_upload(self) -> bool:
-        return self._source.requires_gcs_upload()
 
     def experiments_iter(self) -> Iterable[ExperimentData]:
         return iter(self.experiments)

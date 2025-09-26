@@ -24,7 +24,6 @@ from experiments.runners.services import (ExperimentLoader, ExperimentTracker,
                                           ScreenshotValidationService)
 from experiments.runners.services.agent_simulator import AgentSimulator
 from experiments.runners.simple_runtime import BaseEvaluationRuntime
-from experiments.utils.dataset_ops import get_dataset_name
 
 DEFAULT_MONITOR_INTERVAL = 10
 
@@ -32,7 +31,6 @@ DEFAULT_MONITOR_INTERVAL = 10
 class BatchOrchestratorRuntime(BaseEvaluationRuntime):
     def __init__(
         self,
-        local_dataset_path: str,
         engine_params_list: List[EngineParams],
         output_dir_override: Optional[str] = None,
         experiment_count_limit: Optional[int] = None,
@@ -41,46 +39,109 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         force_submit: bool = False,
         remote: bool = False,
         monitor_interval: int = DEFAULT_MONITOR_INTERVAL,
+        local_dataset_path: Optional[str] = None,
+        hf_dataset_name: Optional[str] = None,
+        hf_subset: str = "all",
     ):
         """Initialize the simplified BatchEvaluationRuntime."""
-        dataset_name = get_dataset_name(local_dataset_path)
+        self.experiment_loader = ExperimentLoader(
+            engine_params=engine_params_list,
+            experiment_count_limit=experiment_count_limit,
+            local_dataset_path=local_dataset_path,
+            hf_dataset_name=hf_dataset_name,
+            hf_subset=hf_subset,
+        )
+
+        dataset_name = self.experiment_loader.dataset_name
 
         super().__init__(dataset_name, output_dir_override, debug_mode)
 
-        # TODO: duplicated. Centralize
-        dataset_dir = Path(local_dataset_path).parent
-        self.screenshots_dir = dataset_dir / "screenshots" / self.dataset_name
+        self._hf_materialized_dir: Optional[Path] = None
+        self.screenshots_dir = self.experiment_loader.screenshots_dir
+        if self.screenshots_dir is None:
+            self.screenshots_dir = self._materialize_hf_screenshots()
 
-        # services
-        self.experiment_loader = ExperimentLoader(
-            local_dataset_path=local_dataset_path,
-            engine_params=engine_params_list,
-            experiment_count_limit=experiment_count_limit,
-        )
         self.experiment_tracker = ExperimentTracker(
             engine_params_list=engine_params_list,
             run_output_dir=self.run_output_dir,
         )
+
+        dataset_path = self.experiment_loader.dataset_path
+        self.dataset_path = dataset_path
+        self.remote = remote
+        self.hf_dataset_name = hf_dataset_name
+        self.hf_subset = hf_subset
+
+        self.screenshot_validator: Optional[ScreenshotValidationService] = None
+        if self.screenshots_dir is not None:
+            self.screenshot_validator = ScreenshotValidationService(
+                screenshots_dir=self.screenshots_dir,
+                dataset_name=self.dataset_name,
+                debug_mode=self.debug_mode,
+            )
+
+        self.screenshot_manager: Optional[GCSManager] = None
+        if self.remote:
+            if self.screenshots_dir is None:
+                self.screenshots_dir = self._materialize_hf_screenshots()
+            self.screenshot_manager = GCSManager(
+                dataset_name=self.dataset_name,
+                screenshots_dir=self.screenshots_dir,
+            )
         self.simulator = AgentSimulator(
-            local_dataset_path=local_dataset_path,
-            run_output_dir=self.run_output_dir,
-            verbose=self.debug_mode,
-        )
-        self.screenshot_validator = ScreenshotValidationService(
-            screenshots_dir=self.screenshots_dir,
             dataset_name=self.dataset_name,
-            debug_mode=self.debug_mode,
-        )
-        self.screenshot_manager = GCSManager(
-            local_dataset_path=local_dataset_path,
+            local_dataset_path=dataset_path,
+            hf_dataset_name=hf_dataset_name,
+            hf_subset=hf_subset,
+            screenshots_dir=self.screenshots_dir,
+            run_output_dir=self.run_output_dir,
+            use_remote=self.remote,
+            verbose=self.debug_mode,
         )
 
         self.engine_params_list = engine_params_list
-        self.local_dataset_path = local_dataset_path
         self.monitor_interval = monitor_interval
         self.experiment_count_limit = experiment_count_limit
 
         self._setup_provider_tools()
+
+    def _materialize_hf_screenshots(self) -> Path:
+        """Persist screenshots from a HuggingFace dataset to the filesystem."""
+        if self._hf_materialized_dir is not None:
+            return self._hf_materialized_dir
+
+        base_dir = self.run_output_dir / "materialized_screenshots"
+        dataset_dir = base_dir / self.dataset_name
+        dataset_dir.mkdir(parents=True, exist_ok=True)
+
+        for experiment in self.experiment_loader.experiments:
+            screenshot = getattr(experiment, "screenshot", None)
+            if screenshot is None:
+                raise ValueError(
+                    "HuggingFace dataset missing embedded screenshot for experiment"
+                )
+
+            target_path = experiment.get_local_screenshot_path(base_dir)
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            if target_path.exists():
+                continue
+
+            if isinstance(screenshot, bytes):
+                target_path.write_bytes(screenshot)
+            elif hasattr(screenshot, "save"):
+                screenshot.save(target_path, format="PNG")
+            elif hasattr(screenshot, "to_pil"):
+                screenshot.to_pil().save(target_path, format="PNG")
+            elif isinstance(screenshot, dict) and "bytes" in screenshot:
+                target_path.write_bytes(screenshot["bytes"])
+            else:
+                raise TypeError(
+                    "Unsupported screenshot payload type for HuggingFace dataset"
+                )
+
+        self._hf_materialized_dir = base_dir
+        return base_dir
 
     def _setup_provider_tools(self) -> None:
         self.provider_deserializers: dict[EngineConfigName, base.Deserializer] = {}
@@ -131,13 +192,15 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             unique_experiments = list(
                 set(chain.from_iterable(outstanding_experiments.values()))
             )
-            self.screenshot_validator.validate_all_screenshots(
-                unique_experiments,
-                self.local_dataset_path,
-            )
-            self.screenshot_manager.upload(
-                outstanding_experiments.values(), verbose=self.debug_mode
-            )
+            if self.screenshot_validator:
+                self.screenshot_validator.validate_all_screenshots(
+                    unique_experiments,
+                    self.dataset_path,
+                )
+            if self.screenshot_manager:
+                self.screenshot_manager.upload(
+                    outstanding_experiments.values(), verbose=self.debug_mode
+                )
 
         return outstanding_experiments
 

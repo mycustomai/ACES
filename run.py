@@ -96,8 +96,12 @@ async def main():
             await runtime.run()
         case "batch":
             print("Using BatchEvaluationRuntime (for Batch processing APIs)")
+            batch_hf_dataset = None if args.local_dataset else hf_dataset
+            batch_hf_subset = args.subset if not args.local_dataset else "all"
             runtime = BatchOrchestratorRuntime(
                 local_dataset_path=args.local_dataset,
+                hf_dataset_name=batch_hf_dataset,
+                hf_subset=batch_hf_subset,
                 engine_params_list=model_configs,
                 experiment_count_limit=args.experiment_count_limit,
                 debug_mode=args.debug,
