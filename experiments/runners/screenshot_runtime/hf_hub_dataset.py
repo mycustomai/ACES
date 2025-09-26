@@ -76,10 +76,6 @@ class HFHubDatasetRuntime(BaseScreenshotRuntime):
         """Return an iterator over experiments from the HF dataset."""
         return hf_experiments_iter(self.hf_dataset_name, subset=self.subset)
 
-    def get_experiments_dataframe(self):
-        """HF datasets don't have a dataframe representation."""
-        return None
-
     def get_dataset_path(self) -> Optional[str]:
         """HF datasets don't have a local path."""
         return None

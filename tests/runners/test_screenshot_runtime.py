@@ -56,6 +56,7 @@ def mock_experiment_data():
         experiment_number=1,
         prompt_template="Find a wireless mouse and add it to cart",
         experiment_df=mock_df,
+        dataset_name="test_dataset",
         screenshot=None
     )
 
@@ -71,6 +72,7 @@ def mock_experiments_list(mock_experiment_data):
             experiment_number=i,
             prompt_template=f"Test prompt {i}",
             experiment_df=Mock(),
+            dataset_name="test_dataset",
             screenshot=None
         )
         experiments.append(exp)
@@ -170,8 +172,8 @@ class TestLocalDatasetRuntime:
         experiments = list(runtime.experiments_iter)
         assert len(experiments) == 3
         assert experiments[0].query == "test_query_0"
-        
-        mock_experiments_iter.assert_called_once_with(runtime.dataset)
+
+        mock_experiments_iter.assert_called_once_with(runtime.dataset, runtime.dataset_name)
     
     @patch('experiments.runners.screenshot_runtime.base.ExperimentWorkerService')
     @patch('experiments.runners.screenshot_runtime.local_dataset.ScreenshotValidationService')
@@ -199,33 +201,46 @@ class TestLocalDatasetRuntime:
                 query=mock_experiment_data.query,
                 experiment_label=mock_experiment_data.experiment_label,
                 experiment_number=mock_experiment_data.experiment_number,
+                dataset_name=runtime.dataset_name,
                 remote=True
             )
             assert environment == mock_env_instance
     
     @patch('experiments.runners.screenshot_runtime.base.ExperimentWorkerService')
     @patch('experiments.runners.screenshot_runtime.local_dataset.ScreenshotValidationService')
+    @patch('experiments.runners.screenshot_runtime.local_dataset.experiments_iter')
     @patch('experiments.runners.screenshot_runtime.local_dataset.load_experiment_data')
-    def test_validate_prerequisites(self, mock_load_data, mock_validation_service, 
-                                  mock_worker_service, mock_engine_params):
+    def test_validate_prerequisites(
+        self,
+        mock_load_data,
+        mock_experiments_iter,
+        mock_validation_service,
+        mock_worker_service,
+        mock_engine_params,
+        mock_experiments_list,
+    ):
         """Test prerequisites validation."""
         mock_load_data.return_value = Mock()
         mock_validation_instance = Mock()
         mock_validation_instance.validate_all_screenshots.return_value = True
         mock_validation_service.return_value = mock_validation_instance
-        
+        mock_experiments_iter.return_value = mock_experiments_list
+
         runtime = LocalDatasetRuntime(
             local_dataset_path="/test/path/test_dataset.csv",
             engine_params_list=mock_engine_params
         )
-        
+
         result = runtime.validate_prerequisites()
-        
-        assert result == True
-        mock_validation_instance.validate_all_screenshots.assert_called_once_with(
-            runtime.dataset,
-            "/test/path/test_dataset.csv"
-        )
+
+        assert result is True
+
+        mock_validation_instance.validate_all_screenshots.assert_called_once()
+        call_args = mock_validation_instance.validate_all_screenshots.call_args
+        passed_experiments, passed_path = call_args[0]
+        assert passed_path == "/test/path/test_dataset.csv"
+        assert isinstance(passed_experiments, list)
+        assert passed_experiments == mock_experiments_list
     
     @patch('experiments.runners.screenshot_runtime.base.ExperimentWorkerService')
     @patch('experiments.runners.screenshot_runtime.local_dataset.ScreenshotValidationService')
@@ -333,6 +348,7 @@ class TestHFHubDatasetRuntime:
             experiment_number=1,
             prompt_template="Test prompt",
             experiment_df=Mock(),
+            dataset_name="test_dataset",
             screenshot=mock_screenshot
         )
         
@@ -361,6 +377,7 @@ class TestHFHubDatasetRuntime:
             experiment_number=1,
             prompt_template="Test prompt",
             experiment_df=Mock(),
+            dataset_name="test_dataset",
             screenshot=None  # No screenshot
         )
         
@@ -509,10 +526,7 @@ class TestBaseScreenshotRuntimeAdditional:
                 
                 def create_shopping_environment(self, data):
                     return Mock()
-                
-                def get_experiments_dataframe(self):
-                    return None
-                
+
                 def get_dataset_path(self):
                     return None
             
@@ -548,10 +562,7 @@ class TestBaseScreenshotRuntimeAdditional:
                 
                 def create_shopping_environment(self, data):
                     return Mock()
-                
-                def get_experiments_dataframe(self):
-                    return None
-                
+
                 def get_dataset_path(self):
                     return None
             
@@ -597,10 +608,7 @@ class TestBaseScreenshotRuntimeAdditional:
                 
                 def create_shopping_environment(self, data):
                     return Mock()
-                
-                def get_experiments_dataframe(self):
-                    return None
-                
+
                 def get_dataset_path(self):
                     return None
             
@@ -632,10 +640,7 @@ class TestBaseScreenshotRuntimeAdditional:
             
             def create_shopping_environment(self, data):
                 return Mock()
-            
-            def get_experiments_dataframe(self):
-                return None
-            
+
             def get_dataset_path(self):
                 return None
             
@@ -678,10 +683,7 @@ class TestBaseScreenshotRuntimeAdditional:
             
             def create_shopping_environment(self, data):
                 return Mock()
-            
-            def get_experiments_dataframe(self):
-                return None
-            
+
             def get_dataset_path(self):
                 return None
         
@@ -756,13 +758,22 @@ class TestLocalDatasetRuntimeAdditional:
     
     @patch('experiments.runners.screenshot_runtime.base.ExperimentWorkerService')
     @patch('experiments.runners.screenshot_runtime.local_dataset.ScreenshotValidationService')
+    @patch('experiments.runners.screenshot_runtime.local_dataset.experiments_iter')
     @patch('experiments.runners.screenshot_runtime.local_dataset.load_experiment_data')
-    def test_validate_prerequisites_service_exception(self, mock_load_data, mock_validation_service, mock_worker_service):
+    def test_validate_prerequisites_service_exception(
+        self,
+        mock_load_data,
+        mock_experiments_iter,
+        mock_validation_service,
+        mock_worker_service,
+        mock_experiments_list,
+    ):
         """Test validation when screenshot validation service throws exception."""
         mock_load_data.return_value = Mock()
         mock_validation_instance = Mock()
         mock_validation_instance.validate_all_screenshots.side_effect = Exception("Validation failed")
         mock_validation_service.return_value = mock_validation_instance
+        mock_experiments_iter.return_value = mock_experiments_list
         
         mock_engine_param = EngineParams(
             engine_type=EngineType.OPENAI,
@@ -852,6 +863,7 @@ class TestHFHubDatasetRuntimeAdditional:
             experiment_number=42,
             prompt_template="Test prompt",
             experiment_df=Mock(),
+            dataset_name="test_dataset",
             screenshot=None  # No screenshot
         )
         

@@ -90,10 +90,6 @@ class LocalDatasetRuntime(BaseScreenshotRuntime):
         """Return an iterator over experiments from the local dataset."""
         return experiments_iter(self.dataset, self.dataset_name)
 
-    def get_experiments_dataframe(self):
-        """Get the experiments dataframe for validation."""
-        return self.dataset
-
     def get_dataset_path(self) -> Optional[str]:
         """Get the dataset path for screenshot regeneration."""
         return self.local_dataset_path
