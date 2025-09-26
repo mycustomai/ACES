@@ -39,16 +39,22 @@ class OpenAIBatchProviderSerializer(BaseBatchProviderSerializer):
         tools: list[dict[str, Any]] = None,
     ) -> ProviderBatchRequest:
         """Serialization of a single experiment."""
+        body: dict[str, Any] = {
+            "model": engine_params.model,
+            "messages": raw_messages,
+        }
+
+        if engine_params.temperature is not None:
+            body["temperature"] = engine_params.temperature
+
+        if engine_params.max_new_tokens is not None:
+            body["max_tokens"] = engine_params.max_new_tokens
+
         batch_request: dict[str, Any] = {
             "custom_id": custom_id,
             "method": "POST",
             "url": "/v1/chat/completions",
-            "body": {
-                "model": engine_params.model,
-                "messages": raw_messages,
-                "max_tokens": engine_params.max_new_tokens,
-                "temperature": engine_params.temperature,
-            },
+            "body": body,
         }
 
         if tools:
