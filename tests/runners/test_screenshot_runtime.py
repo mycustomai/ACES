@@ -108,6 +108,7 @@ class TestScreenshotRuntime:
             loader,
             mock_engine_params,
             local_dataset_path=str(dataset_path),
+            remote=False,
         ) as (runtime, loader_cls, validation_cls, validation_instance):
             expected_call = dict(
                 engine_params=mock_engine_params,
@@ -133,6 +134,7 @@ class TestScreenshotRuntime:
             mock_engine_params,
             hf_dataset_name="my/dataset",
             hf_subset="subset",
+            remote=False,
         ) as (runtime, loader_cls, validation_cls, _):
             expected_call = dict(
                 engine_params=mock_engine_params,
@@ -155,6 +157,7 @@ class TestScreenshotRuntime:
             loader,
             mock_engine_params,
             hf_dataset_name="my/dataset",
+            remote=False,
         ) as (runtime, _, _, _):
             experiments = list(runtime.experiments_iter)
             assert experiments == [sample_experiment]
@@ -211,6 +214,7 @@ class TestScreenshotRuntime:
                 loader,
                 mock_engine_params,
                 hf_dataset_name="my/dataset",
+                remote=False,
             ) as (runtime, _, _, _):
                 environment = runtime.create_shopping_environment(sample_experiment)
 
@@ -226,6 +230,7 @@ class TestScreenshotRuntime:
             loader,
             mock_engine_params,
             hf_dataset_name="my/dataset",
+            remote=False,
         ) as (runtime, _, _, _):
             with pytest.raises(ValueError, match="No screenshot found"):
                 runtime.create_shopping_environment(sample_experiment)
@@ -245,6 +250,7 @@ class TestScreenshotRuntime:
             loader,
             mock_engine_params,
             local_dataset_path=str(dataset_path),
+            remote=False,
         ) as (runtime, _, _, validation_instance):
             validation_instance.validate_all_screenshots.return_value = True
             assert runtime.validate_prerequisites() is True
@@ -263,6 +269,7 @@ class TestScreenshotRuntime:
             loader,
             mock_engine_params,
             local_dataset_path=str(dataset_path),
+            remote=False,
         ) as (runtime, _, _, _):
             assert runtime.get_dataset_path() == str(dataset_path)
 

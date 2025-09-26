@@ -27,12 +27,12 @@ class ScreenshotRuntime(BaseEvaluationRuntime):
     def __init__(
         self,
         engine_params_list: List[EngineParams],
+        remote: bool,
         output_dir_override: Optional[str] = None,
         max_concurrent_per_engine: int = 5,
         experiment_count_limit: Optional[int] = None,
         experiment_label_filter: Optional[str] = None,
         debug_mode: bool = False,
-        remote: bool = False,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
         hf_subset: str = "all",
