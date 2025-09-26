@@ -3,6 +3,7 @@ Screenshot validation service for batch and screenshot runtimes.
 """
 
 from pathlib import Path
+from typing import Optional
 
 from rich import print as _print
 from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
@@ -25,7 +26,7 @@ class ScreenshotValidationService:
         self.debug_mode = debug_mode
 
     def validate_all_screenshots(
-        self, experiments: list[ExperimentData], local_dataset_path: str
+        self, experiments: list[ExperimentData], local_dataset_path: Optional[str]
     ) -> bool:
         """
         Validate that all required screenshots exist.
@@ -33,6 +34,10 @@ class ScreenshotValidationService:
         Returns:
             True if all screenshots exist and are valid
         """
+        if not local_dataset_path:
+            # Remote datasets don't require local screenshot validation
+            return True
+
         _print("[bold blue]Validating screenshot availability...")
 
         if not ensure_all_screenshots_exist(experiments, local_dataset_path):

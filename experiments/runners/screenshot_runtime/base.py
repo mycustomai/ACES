@@ -90,15 +90,12 @@ class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
     def validate_prerequisites(self) -> bool:
         """Validate any prerequisites before running experiments."""
         if self.validation_service:
+            experiments_list = list(self.experiments_iter)
             return self.validation_service.validate_all_screenshots(
-                self.get_experiments_dataframe(), self.get_dataset_path()
+                experiments_list,
+                self.get_dataset_path(),
             )
         return True
-
-    @abstractmethod
-    def get_experiments_dataframe(self):
-        """Get the experiments dataframe for validation."""
-        pass
 
     @abstractmethod
     def get_dataset_path(self) -> Optional[str]:
