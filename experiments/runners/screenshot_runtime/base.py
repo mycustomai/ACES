@@ -1,12 +1,7 @@
-"""
-Base class for screenshot-based runtimes using composed services.
-
-This module provides the abstract base class for all screenshot-based experiment runtimes
-that use the new service architecture for better code reuse and maintainability.
-"""
+"""Unified screenshot runtime built on shared experiment services."""
 
 import os
-from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Iterable, List, Optional
 
 from rich import print as _print
@@ -17,48 +12,53 @@ from agent.src.logger import create_logger
 from agent.src.shopper import SimulatedShopper
 from agent.src.typedefs import EngineParams, EngineType
 from experiments.config import ExperimentData
+from experiments.dataset_environment import DatasetShoppingEnvironment
+from experiments.filesystem_environment import FilesystemShoppingEnvironment
 from experiments.results import aggregate_run_data
-from experiments.runners.services import (ExperimentWorkerService,
+from experiments.runners.services import (ExperimentLoader,
+                                          ExperimentWorkerService,
                                           ScreenshotValidationService)
 from experiments.runners.simple_runtime import BaseEvaluationRuntime
 
 
-class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
-    """
-    Simplified base class for screenshot-based runtimes using composed services.
-
-    This class uses the new service architecture to reduce code duplication
-    and improve maintainability across different screenshot runtime implementations.
-    """
+class ScreenshotRuntime(BaseEvaluationRuntime):
+    """Screenshot runtime that supports both local and HuggingFace datasets."""
 
     def __init__(
         self,
-        dataset_name: str,
         engine_params_list: List[EngineParams],
         output_dir_override: Optional[str] = None,
         max_concurrent_per_engine: int = 5,
         experiment_count_limit: Optional[int] = None,
         experiment_label_filter: Optional[str] = None,
         debug_mode: bool = False,
+        remote: bool = False,
+        local_dataset_path: Optional[str] = None,
+        hf_dataset_name: Optional[str] = None,
+        hf_subset: str = "all",
     ):
         """
-        Initialize the BaseScreenshotRuntime with services.
-
-        Args:
-            dataset_name: Name for the dataset (used for output directory)
-            engine_params_list: List of model engine parameters to evaluate
-            output_dir_override: Optional override for output directory name
-            max_concurrent_per_engine: Maximum concurrent experiments per engine type
-            experiment_count_limit: Number of experiments to run (None = no limit)
-            experiment_label_filter: Filter experiments by specific label (None = no filter)
-            debug_mode: Show full tracebacks and skip try/except handling
+        Initialize the unified screenshot runtime.
         """
+        self.experiment_loader = ExperimentLoader(
+            engine_params=engine_params_list,
+            experiment_count_limit=experiment_count_limit,
+            local_dataset_path=local_dataset_path,
+            hf_dataset_name=hf_dataset_name,
+            hf_subset=hf_subset,
+        )
+
+        dataset_name = self.experiment_loader.dataset_name
+
         super().__init__(dataset_name, output_dir_override, debug_mode)
 
         self.engine_params_list = engine_params_list
         self.experiment_count_limit = experiment_count_limit
         self.experiment_label_filter = experiment_label_filter
         self.max_concurrent_per_engine = max_concurrent_per_engine
+        self.remote = remote
+
+        self.screenshots_dir = self.experiment_loader.screenshots_dir
 
         self.distributed_engine_params = self._distribute_engine_params()
 
@@ -66,26 +66,45 @@ class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
             max_concurrent_per_engine=max_concurrent_per_engine
         )
 
-        # Screenshot validation service will be initialized by subclasses
-        # TODO: validation service for HFHub runner should upload to GCS when `remote` enabled
+        # Screenshot validation only applies to local datasets with filesystem screenshots
         self.validation_service: Optional[ScreenshotValidationService] = None
+        dataset_path = self.experiment_loader.dataset_path
+        if self.screenshots_dir and dataset_path:
+            dataset_dir = Path(dataset_path).parent
+            self.validation_service = ScreenshotValidationService(
+                self.screenshots_dir, str(dataset_dir), debug_mode=debug_mode
+            )
 
         _print(
             f"[bold blue]Configured {len(engine_params_list)} engines with {max_concurrent_per_engine} max concurrent per engine"
         )
 
     @property
-    @abstractmethod
     def experiments_iter(self) -> Iterable[ExperimentData]:
-        """Abstract property that returns an iterator over experiments."""
-        pass
+        """Return an iterator over all experiments for this run."""
+        return self.experiment_loader.experiments_iter()
 
-    @abstractmethod
     def create_shopping_environment(
         self, data: ExperimentData
     ) -> BaseShoppingEnvironment:
-        """Create a shopping environment for the given experiment data."""
-        pass
+        """Create a shopping environment based on dataset source."""
+        if self.screenshots_dir:
+            return FilesystemShoppingEnvironment(
+                screenshots_dir=self.screenshots_dir,
+                query=data.query,
+                experiment_label=data.experiment_label,
+                experiment_number=data.experiment_number,
+                dataset_name=self.experiment_loader.dataset_name,
+                remote=self.remote,
+            )
+
+        screenshot = data.screenshot
+        if screenshot is None:
+            raise ValueError(
+                f"No screenshot found for experiment ({data.query}, {data.experiment_label}, {data.experiment_number})"
+            )
+
+        return DatasetShoppingEnvironment(screenshot_image=screenshot)
 
     def validate_prerequisites(self) -> bool:
         """Validate any prerequisites before running experiments."""
@@ -97,10 +116,9 @@ class BaseScreenshotRuntime(BaseEvaluationRuntime, ABC):
             )
         return True
 
-    @abstractmethod
     def get_dataset_path(self) -> Optional[str]:
         """Get the dataset path for screenshot regeneration."""
-        pass
+        return self.experiment_loader.dataset_path
 
     async def run_single_experiment(
         self, data: ExperimentData, engine_params: EngineParams
