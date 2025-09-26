@@ -98,6 +98,8 @@ async def main():
             print("Using BatchEvaluationRuntime (for Batch processing APIs)")
             runtime = BatchOrchestratorRuntime(
                 local_dataset_path=args.local_dataset,
+                hf_dataset_name=hf_dataset,
+                hf_subset=args.subset,
                 engine_params_list=model_configs,
                 experiment_count_limit=args.experiment_count_limit,
                 debug_mode=args.debug,
