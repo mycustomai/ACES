@@ -1,7 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 from google.cloud import storage
 from pydantic import BaseModel
@@ -27,15 +27,30 @@ class GCSManager:
 
     def __init__(
         self,
-        local_dataset_path: str,
+        local_dataset_path: Optional[str] = None,
+        hf_dataset_name: Optional[str] = None,
+        hf_subset: str = "all",
         max_workers: int = 16,
     ):
         # TODO: this needs to be self-contained in a dataset manager class so as to decouple local dataset vs hf dataset.
         #  this class may be passed in on object initialization
-        self.dataset_name = get_dataset_name(local_dataset_path)
-        dataset_dir = Path(local_dataset_path).parent
-        self.screenshots_dir = dataset_dir / "screenshots"
+        if not local_dataset_path and not hf_dataset_name:
+            raise ValueError(
+                "GCSManager requires either a local_dataset_path or hf_dataset_name"
+            )
+
         self.local_dataset_path = local_dataset_path
+        self.hf_dataset_name = hf_dataset_name
+        self.hf_subset = hf_subset
+
+        if local_dataset_path:
+            self.dataset_name = get_dataset_name(local_dataset_path)
+            dataset_dir = Path(local_dataset_path).parent
+            self.screenshots_dir = dataset_dir / "screenshots"
+        else:
+            assert hf_dataset_name is not None  # Narrow type for mypy
+            self.dataset_name = f"{hf_dataset_name.replace('/', '_')}_{hf_subset}"
+            self.screenshots_dir = None
 
         self.max_workers = max_workers
 
@@ -53,6 +68,10 @@ class GCSManager:
     def upload(
         self, experiments: Iterable[List[ExperimentData]], verbose: bool = False
     ):
+        if self.screenshots_dir is None:
+            raise ValueError(
+                "Uploading screenshots for HuggingFace datasets is not yet supported"
+            )
         uploaded_screenshot_paths = set(self._list_uploaded_screenshots())
         if verbose:
             _print(
