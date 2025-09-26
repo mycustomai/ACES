@@ -2,7 +2,6 @@ import json
 import time
 from copy import copy
 from itertools import chain
-from pathlib import Path
 from time import sleep
 from typing import List, Optional
 
@@ -24,7 +23,6 @@ from experiments.runners.services import (ExperimentLoader, ExperimentTracker,
                                           ScreenshotValidationService)
 from experiments.runners.services.agent_simulator import AgentSimulator
 from experiments.runners.simple_runtime import BaseEvaluationRuntime
-from experiments.utils.dataset_ops import get_dataset_name
 
 DEFAULT_MONITOR_INTERVAL = 10
 
@@ -32,7 +30,6 @@ DEFAULT_MONITOR_INTERVAL = 10
 class BatchOrchestratorRuntime(BaseEvaluationRuntime):
     def __init__(
         self,
-        local_dataset_path: str,
         engine_params_list: List[EngineParams],
         output_dir_override: Optional[str] = None,
         experiment_count_limit: Optional[int] = None,
@@ -41,42 +38,62 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         force_submit: bool = False,
         remote: bool = False,
         monitor_interval: int = DEFAULT_MONITOR_INTERVAL,
+        local_dataset_path: Optional[str] = None,
+        hf_dataset_name: Optional[str] = None,
+        hf_subset: str = "all",
     ):
         """Initialize the simplified BatchEvaluationRuntime."""
-        dataset_name = get_dataset_name(local_dataset_path)
+        self.experiment_loader = ExperimentLoader(
+            engine_params=engine_params_list,
+            experiment_count_limit=experiment_count_limit,
+            local_dataset_path=local_dataset_path,
+            hf_dataset_name=hf_dataset_name,
+            hf_subset=hf_subset,
+        )
+
+        dataset_name = self.experiment_loader.dataset_name
 
         super().__init__(dataset_name, output_dir_override, debug_mode)
 
-        # TODO: duplicated. Centralize
-        dataset_dir = Path(local_dataset_path).parent
-        self.screenshots_dir = dataset_dir / "screenshots" / self.dataset_name
+        self.screenshots_dir = self.experiment_loader.screenshots_dir
 
-        # services
-        self.experiment_loader = ExperimentLoader(
-            local_dataset_path=local_dataset_path,
-            engine_params=engine_params_list,
-            experiment_count_limit=experiment_count_limit,
-        )
         self.experiment_tracker = ExperimentTracker(
             engine_params_list=engine_params_list,
             run_output_dir=self.run_output_dir,
         )
+
+        dataset_path = self.experiment_loader.dataset_path
+        self.dataset_path = dataset_path
+
+        self.screenshot_validator: Optional[ScreenshotValidationService] = None
+        if self.screenshots_dir is not None:
+            self.screenshot_validator = ScreenshotValidationService(
+                screenshots_dir=self.screenshots_dir,
+                dataset_name=self.dataset_name,
+                debug_mode=self.debug_mode,
+            )
+
+        self.screenshot_manager: Optional[GCSManager] = None
+        if self.experiment_loader.requires_gcs_upload():
+            if dataset_path is None:
+                raise ValueError(
+                    "Local dataset path required when screenshots need GCS upload"
+                )
+            self.screenshot_manager = GCSManager(
+                local_dataset_path=dataset_path,
+            )
+
+        if dataset_path is None:
+            raise ValueError(
+                "BatchOrchestratorRuntime currently requires a local dataset path"
+            )
         self.simulator = AgentSimulator(
-            local_dataset_path=local_dataset_path,
+            local_dataset_path=dataset_path,
             run_output_dir=self.run_output_dir,
             verbose=self.debug_mode,
         )
-        self.screenshot_validator = ScreenshotValidationService(
-            screenshots_dir=self.screenshots_dir,
-            dataset_name=self.dataset_name,
-            debug_mode=self.debug_mode,
-        )
-        self.screenshot_manager = GCSManager(
-            local_dataset_path=local_dataset_path,
-        )
 
         self.engine_params_list = engine_params_list
-        self.local_dataset_path = local_dataset_path
         self.monitor_interval = monitor_interval
         self.experiment_count_limit = experiment_count_limit
 
@@ -131,13 +148,15 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             unique_experiments = list(
                 set(chain.from_iterable(outstanding_experiments.values()))
             )
-            self.screenshot_validator.validate_all_screenshots(
-                unique_experiments,
-                self.local_dataset_path,
-            )
-            self.screenshot_manager.upload(
-                outstanding_experiments.values(), verbose=self.debug_mode
-            )
+            if self.screenshot_validator:
+                self.screenshot_validator.validate_all_screenshots(
+                    unique_experiments,
+                    self.dataset_path,
+                )
+            if self.screenshot_manager:
+                self.screenshot_manager.upload(
+                    outstanding_experiments.values(), verbose=self.debug_mode
+                )
 
         return outstanding_experiments
 
