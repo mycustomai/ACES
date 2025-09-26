@@ -13,7 +13,7 @@ class FilesystemShoppingEnvironment(BaseShoppingEnvironment):
     This is useful for replaying experiments or testing with pre-captured screenshots.
     """
     
-    def __init__(self, screenshots_dir: Path, query: str, experiment_label: str, experiment_number: int, dataset_name: str, remote: bool = False):
+    def __init__(self, screenshots_dir: Path, query: str, experiment_label: str, experiment_number: int, dataset_name: str, remote: bool):
         """
         Initialize the filesystem environment.
         

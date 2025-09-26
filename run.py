@@ -79,11 +79,11 @@ async def main():
 
             runtime = ScreenshotRuntime(
                 engine_params_list=model_configs,
+                remote=args.remote,
                 max_concurrent_per_engine=MAX_CONCURRENT_MODELS,
                 experiment_count_limit=EXPERIMENT_COUNT_LIMIT,
                 experiment_label_filter=EXPERIMENT_LABEL_FILTER,
                 debug_mode=args.debug,
-                remote=args.remote,
                 local_dataset_path=args.local_dataset,
                 hf_dataset_name=None if args.local_dataset else hf_dataset,
                 hf_subset=args.subset if not args.local_dataset else "all",
@@ -94,14 +94,14 @@ async def main():
             batch_hf_dataset = None if args.local_dataset else hf_dataset
             batch_hf_subset = args.subset if not args.local_dataset else "all"
             runtime = BatchOrchestratorRuntime(
+                engine_params_list=model_configs,
+                remote=args.remote,
                 local_dataset_path=args.local_dataset,
                 hf_dataset_name=batch_hf_dataset,
                 hf_subset=batch_hf_subset,
-                engine_params_list=model_configs,
                 experiment_count_limit=args.experiment_count_limit,
                 debug_mode=args.debug,
                 force_submit=args.force_submit,
-                remote=args.remote,
             )
             runtime.run()
         case _:

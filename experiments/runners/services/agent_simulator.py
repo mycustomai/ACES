@@ -27,11 +27,11 @@ class AgentSimulator:
         self,
         dataset_name: str,
         run_output_dir: Path,
+        use_remote: bool,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
         hf_subset: str = "all",
         screenshots_dir: Optional[Path] = None,
-        use_remote: bool = False,
         verbose: bool = False,
     ):
         self.dataset_name = dataset_name

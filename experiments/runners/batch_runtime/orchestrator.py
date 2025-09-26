@@ -32,12 +32,12 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
     def __init__(
         self,
         engine_params_list: List[EngineParams],
+        remote: bool,
         output_dir_override: Optional[str] = None,
         experiment_count_limit: Optional[int] = None,
         experiment_label_filter: Optional[str] = None,
         debug_mode: bool = False,
         force_submit: bool = False,
-        remote: bool = False,
         monitor_interval: int = DEFAULT_MONITOR_INTERVAL,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
@@ -90,12 +90,12 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             )
         self.simulator = AgentSimulator(
             dataset_name=self.dataset_name,
+            run_output_dir=self.run_output_dir,
+            use_remote=self.remote,
             local_dataset_path=dataset_path,
             hf_dataset_name=hf_dataset_name,
             hf_subset=hf_subset,
             screenshots_dir=self.screenshots_dir,
-            run_output_dir=self.run_output_dir,
-            use_remote=self.remote,
             verbose=self.debug_mode,
         )
 
