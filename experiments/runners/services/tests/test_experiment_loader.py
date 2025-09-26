@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -5,9 +6,14 @@ import pytest
 
 from agent.src.typedefs import EngineConfigName, EngineParams, EngineType
 from experiments.config import ExperimentData, ExperimentId
-from experiments.runners.batch_runtime.common.encoded_id_mixin import \
-    EncodedExperimentIdMixin
-from experiments.runners.services.experiment_loader import ExperimentLoader
+from experiments.runners.batch_runtime.common.encoded_id_mixin import (
+    EncodedExperimentIdMixin,
+)
+from experiments.runners.services.experiment_loader import (
+    ExperimentLoader,
+    _HFDatasetSource,
+    _LocalDatasetSource,
+)
 
 
 class TestExperimentLoader:
@@ -67,49 +73,108 @@ class TestExperimentLoader:
     @pytest.fixture
     def experiment_loader(self, mock_engine_params):
         with patch(
-            "experiments.runners.services.experiment_loader.ExperimentLoader._load_local_dataset"
+            "experiments.runners.services.experiment_loader._LocalDatasetSource.load_experiments"
         ) as mock_load:
             mock_load.return_value = []
             return ExperimentLoader(
-                local_dataset_path="/path/to/mousepad_dataset.csv",
                 engine_params=mock_engine_params,
+                local_dataset_path="/path/to/mousepad_dataset.csv",
             )
 
     @patch(
-        "experiments.runners.services.experiment_loader.ExperimentLoader._load_local_dataset"
+        "experiments.runners.services.experiment_loader._LocalDatasetSource.load_experiments"
     )
     def test_init(self, mock_load_local_dataset, mock_engine_params):
         mock_load_local_dataset.return_value = []
         loader = ExperimentLoader(
-            local_dataset_path="/path/to/dataset.csv", engine_params=mock_engine_params
+            engine_params=mock_engine_params,
+            local_dataset_path="/path/to/mousepad_dataset.csv",
         )
-        assert loader.local_dataset_path == "/path/to/dataset.csv"
-        assert loader.engine_params == mock_engine_params
+        assert loader.dataset_path == "/path/to/mousepad_dataset.csv"
+        assert loader.dataset_name == "mousepad"
+        assert loader.screenshots_dir == Path("/path/to") / "screenshots" / "mousepad"
+        assert loader.requires_gcs_upload()
         assert isinstance(loader.experiments, set)
-        mock_load_local_dataset.assert_called_once()
+        mock_load_local_dataset.assert_called_once_with(None)
+
+    def test_init_requires_dataset_source(self, mock_engine_params):
+        with pytest.raises(
+            ValueError, match="Must specify either local_dataset_path or hf_dataset_name"
+        ):
+            ExperimentLoader(engine_params=mock_engine_params)
+
+    def test_init_rejects_multiple_sources(self, mock_engine_params):
+        with pytest.raises(
+            ValueError, match="Cannot specify both local_dataset_path and hf_dataset_name"
+        ):
+            ExperimentLoader(
+                engine_params=mock_engine_params,
+                local_dataset_path="/path/to/dataset.csv",
+                hf_dataset_name="org/dataset",
+            )
 
     @patch("experiments.runners.services.experiment_loader.pd.read_csv")
-    @patch("experiments.runners.services.experiment_loader.get_dataset_name")
     @patch("experiments.runners.services.experiment_loader.experiments_iter")
-    def test_load_local_dataset(
+    def test_local_dataset_source_loads_data(
         self,
         mock_experiments_iter,
-        mock_get_dataset_name,
         mock_read_csv,
-        experiment_loader,
         mock_experiment_data,
     ):
         mock_df = pd.DataFrame()
         mock_read_csv.return_value = mock_df
-        mock_get_dataset_name.return_value = "mousepad"
         mock_experiments_iter.return_value = mock_experiment_data
 
-        result = experiment_loader._load_local_dataset()
+        source = _LocalDatasetSource("/path/to/mousepad_dataset.csv")
+
+        result = source.load_experiments()
 
         mock_read_csv.assert_called_once_with("/path/to/mousepad_dataset.csv")
-        mock_get_dataset_name.assert_called_once_with("/path/to/mousepad_dataset.csv")
         mock_experiments_iter.assert_called_once_with(mock_df, "mousepad")
         assert result == mock_experiment_data
+        assert source.get_dataset_name() == "mousepad"
+        assert source.get_screenshots_dir() == Path("/path/to") / "screenshots" / "mousepad"
+        assert source.get_dataset_path() == "/path/to/mousepad_dataset.csv"
+        assert source.requires_gcs_upload()
+
+        mock_read_csv.reset_mock()
+        mock_experiments_iter.reset_mock()
+        limited = source.load_experiments(experiment_count_limit=2)
+        mock_read_csv.assert_called_once_with("/path/to/mousepad_dataset.csv")
+        mock_experiments_iter.assert_called_once_with(mock_df, "mousepad")
+        assert len(limited) == 2
+
+    @patch("experiments.runners.services.experiment_loader.hf_experiments_iter")
+    def test_hf_dataset_source_loads_data(
+        self,
+        mock_hf_iter,
+        mock_experiment_data,
+    ):
+        mock_hf_iter.return_value = mock_experiment_data
+
+        source = _HFDatasetSource("org/dataset", subset="test")
+
+        result = source.load_experiments()
+
+        mock_hf_iter.assert_called_once_with("org/dataset", subset="test")
+        assert all(exp.dataset_name == "org_dataset_test" for exp in result)
+        assert source.get_dataset_name() == "org_dataset_test"
+        assert source.get_screenshots_dir() is None
+        assert source.get_dataset_path() is None
+        assert not source.requires_gcs_upload()
+
+        mock_hf_iter.reset_mock()
+        limited = source.load_experiments(experiment_count_limit=1)
+        mock_hf_iter.assert_called_once_with("org/dataset", subset="test")
+        assert len(limited) == 1
+
+    def test_experiments_iter_returns_iterator(
+        self, experiment_loader, mock_experiment_data
+    ):
+        experiment_loader.experiments = set(mock_experiment_data)
+
+        items = list(experiment_loader.experiments_iter())
+        assert set(items) == set(mock_experiment_data)
 
     def test_load_outstanding_experiments_no_existing(
         self, experiment_loader, mock_experiment_data
@@ -300,13 +365,13 @@ class TestExperimentLoader:
     ):
         """Test that experiments property is properly initialized during __init__."""
         with patch(
-            "experiments.runners.services.experiment_loader.ExperimentLoader._load_local_dataset"
+            "experiments.runners.services.experiment_loader._LocalDatasetSource.load_experiments"
         ) as mock_load:
             mock_load.return_value = mock_experiment_data
 
             loader = ExperimentLoader(
-                local_dataset_path="/path/to/dataset.csv",
                 engine_params=mock_engine_params,
+                local_dataset_path="/path/to/dataset.csv",
             )
 
             # Test that experiments is a set
@@ -381,10 +446,10 @@ class TestExperimentLoader:
         # Create encoded ID for non-existent experiment
         nonexistent_id = ExperimentId("nonexistent_experiment_id")
         encoded_id = EncodedExperimentIdMixin.encode_custom_id(nonexistent_id)
-        
+
         # Should raise ValueError when encoded ID cannot be decoded
         with pytest.raises(
-                ValueError, match=f"Could not decode encoded ExperimentId: {encoded_id}"
+            ValueError, match=f"Could not decode encoded ExperimentId: {encoded_id}"
         ):
             experiment_loader.get_experiment_by_id(encoded_id)
 
