@@ -1,7 +1,7 @@
 """ Type definitions used throughout the simulator. """
 
 from enum import StrEnum
-from typing import Optional, Any, Dict, List, NewType
+from typing import Optional, Any, Dict, List, NewType, Literal
 
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, ToolCall
 from pydantic import BaseModel, Field, field_validator, ConfigDict, SecretStr
@@ -103,6 +103,7 @@ class OpenAIParams(EngineParams):
     frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Frequency penalty")
     presence_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Presence penalty")
     stop: Optional[List[str]] = Field(None, description="Stop sequences")
+    reasoning_effort: Optional[Literal["minimal"]] = Field(None)
 
 
 class AnthropicParams(EngineParams):
