@@ -2,7 +2,6 @@ import json
 import os
 import time
 
-import vertexai
 from google import genai
 from google.cloud import storage
 from google.genai.types import CreateBatchJobConfig, HttpOptions
@@ -24,7 +23,6 @@ class GeminiBatchProviderSubmitter(BaseBatchProviderSubmitter):
         """Initialize Gemini/Vertex AI client and validate configuration."""
         self.api_key = self.engine_params.api_key or os.getenv("GOOGLE_API_KEY")
         self.project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-        self.location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
         self.bucket_name = os.getenv("GCS_BUCKET_NAME")
 
         # Validate configuration
@@ -50,12 +48,10 @@ class GeminiBatchProviderSubmitter(BaseBatchProviderSubmitter):
     def _init_clients(self) -> None:
         """Initialize Google Cloud clients."""
 
-        # Set environment variables for genai client to use Vertex AI
-        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
-
-        vertexai.init(project=self.project_id, location=self.location)
-
-        self.genai_client = genai.Client(http_options=HttpOptions(api_version="v1"))
+        self.genai_client = genai.Client(
+            http_options=HttpOptions(api_version="v1"),
+            location="global"
+        )
         self.storage_client = storage.Client(project=self.project_id)
         self.bucket = self.storage_client.bucket(self.bucket_name)
 
