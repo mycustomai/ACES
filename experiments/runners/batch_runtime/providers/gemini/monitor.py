@@ -65,6 +65,7 @@ class GeminiProviderBatchMonitor(BaseBatchProviderMonitor):
         """Initialize Google Cloud clients."""
         self.genai_client = genai.Client(
             http_options=HttpOptions(api_version="v1"),
+            vertexai=True,
             location="global",
         )
 

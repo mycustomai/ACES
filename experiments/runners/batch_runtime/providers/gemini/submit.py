@@ -50,7 +50,8 @@ class GeminiBatchProviderSubmitter(BaseBatchProviderSubmitter):
 
         self.genai_client = genai.Client(
             http_options=HttpOptions(api_version="v1"),
-            location="global"
+            vertexai=True,
+            location="global",
         )
         self.storage_client = storage.Client(project=self.project_id)
         self.bucket = self.storage_client.bucket(self.bucket_name)
