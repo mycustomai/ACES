@@ -172,7 +172,6 @@ class LMMAgent:
                 google_api_key=final_api_key,
                 temperature=temperature,
                 # TODO: ensure that model-specific config YAML parses this correctly
-                #thinking_budget=0,
                 max_retries=1,
                 timeout=10,
                 **gemini_kwargs,
