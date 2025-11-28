@@ -118,12 +118,9 @@ class GeminiBatchProviderSerializer(BaseBatchProviderSerializer):
         if tools:
             gemini_tools = cls._convert_tools_to_gemini(tools)
 
-        thinking_config = (
-            types.GenerationConfigThinkingConfig(
-                thinking_budget=engine_params.thinking_budget,
-            )
-            if engine_params.thinking_budget is not None
-            else None
+        thinking_config = types.ThinkingConfig(
+            thinking_budget=engine_params.thinking_budget,
+            thinking_level=engine_params.thinking_level,
         )
 
         config = types.GenerationConfig(
