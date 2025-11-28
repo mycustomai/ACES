@@ -3,6 +3,7 @@
 from enum import StrEnum
 from typing import Optional, Any, Dict, List, NewType, Literal
 
+from google.genai.types import ThinkingLevel
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, ToolCall
 from pydantic import BaseModel, Field, field_validator, ConfigDict, SecretStr, model_validator
 
@@ -128,7 +129,7 @@ class GeminiParams(EngineParams):
     # Gemini-specific fields
     safety_settings: Optional[Dict[str, Any]] = Field(None, description="Safety filter settings")
     thinking_budget: Optional[int] = Field(None, ge=0, description="Thinking budget")
-    thinking_level: Optional[Literal["low", "high"]] = None
+    thinking_level: Optional[ThinkingLevel] = None
 
     @model_validator(mode="after")
     def validate_thinking_config(self):
