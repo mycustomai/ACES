@@ -156,15 +156,17 @@ class LMMAgent:
                 gemini_kwargs["max_output_tokens"] = max_tokens
             
             # Add Gemini-specific fields if present in the original data
+            if params.thinking_level is not None:
+                warn("thinking level is not supported at this time. See https://github.com/langchain-ai/langchain-google/issues/1366.")
             params_dict = params.to_dict()
             for field in ["safety_settings", "top_p", "top_k"]:
                 if field in params_dict and params_dict[field] is not None:
                     gemini_kwargs[field] = params_dict[field]
-            
+
             final_api_key = api_key or config.google_api_key
             if not final_api_key:
                 raise ValueError("No Google API key provided. Set GOOGLE_API_KEY environment variable or provide api_key parameter.")
-            
+
             return ChatGoogleGenerativeAI(
                 model=model,
                 google_api_key=final_api_key,
