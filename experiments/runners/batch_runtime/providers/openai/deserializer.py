@@ -35,7 +35,8 @@ class OpenAIBatchProviderDeserializer(BaseBatchProviderDeserializer):
             response_content = f"API Error message: {result.response.error.message}"
             failure_reason = ExperimentFailureModes.API_ERROR
         else:
-            response_content = result.get_content()
+            # when using reasoning_effort = low, the model sometimes does not produce a response
+            response_content = result.get_content() or "[Model did not return a response]"
             tool_calls = result.get_tool_calls()
             if tool_calls:
                 tool_call_data = self._extract_tool_call(tool_calls)
