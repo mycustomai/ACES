@@ -1,0 +1,4 @@
+engine_type: openai
+model: gpt-5.1
+temperature: 1.0
+reasoning_effort: low
