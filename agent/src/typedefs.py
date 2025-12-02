@@ -104,7 +104,7 @@ class OpenAIParams(EngineParams):
     frequency_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Frequency penalty")
     presence_penalty: Optional[float] = Field(None, ge=-2.0, le=2.0, description="Presence penalty")
     stop: Optional[List[str]] = Field(None, description="Stop sequences")
-    reasoning_effort: Optional[Literal["minimal"]] = Field(None)
+    reasoning_effort: Optional[Literal["minimal", "none", "low", "medium", "high"]] = Field(None)
 
 
 class AnthropicParams(EngineParams):
