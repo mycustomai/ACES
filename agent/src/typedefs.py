@@ -2,6 +2,7 @@
 
 from enum import StrEnum
 from typing import Optional, Any, Dict, List, NewType, Literal
+from warnings import warn
 
 from google.genai.types import ThinkingLevel
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, ToolCall
@@ -114,9 +115,16 @@ class AnthropicParams(EngineParams):
     model: str = Field(..., description="Anthropic model name (e.g., claude-3-sonnet-20240229)")
     
     # Anthropic-specific fields
-    thinking: Optional[dict[str, Any]] = Field(None, description="Thinking mode config for Claude")
+    thinking: Optional[dict[str, Any]] = None
+    effort: Optional[Literal["low", "medium", "high"]] = None
     top_p: Optional[float] = Field(None, ge=0.0, le=1.0, description="Nucleus sampling parameter")
     top_k: Optional[int] = Field(None, gt=0, description="Top-k sampling parameter")
+
+    @model_validator(mode="after")
+    def validate_thinking_config(self):
+        if (self.thinking is None or self.thinking.get("enabled", False)) and self.effort is not None:
+            warn("Anthropic thinking and effort control different knobs. Use thinking configuration to enable thinking.")
+        return self
 
 
 class GeminiParams(EngineParams):
