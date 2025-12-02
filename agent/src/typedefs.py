@@ -3,8 +3,9 @@
 from enum import StrEnum
 from typing import Optional, Any, Dict, List, NewType, Literal
 
+from google.genai.types import ThinkingLevel
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, ToolCall
-from pydantic import BaseModel, Field, field_validator, ConfigDict, SecretStr
+from pydantic import BaseModel, Field, field_validator, ConfigDict, SecretStr, model_validator
 
 ChatHistory: List[SystemMessage | HumanMessage | AIMessage | ToolMessage]
 
@@ -128,6 +129,16 @@ class GeminiParams(EngineParams):
     # Gemini-specific fields
     safety_settings: Optional[Dict[str, Any]] = Field(None, description="Safety filter settings")
     thinking_budget: Optional[int] = Field(None, ge=0, description="Thinking budget")
+    thinking_level: Optional[ThinkingLevel] = None
+
+    @model_validator(mode="after")
+    def validate_thinking_config(self):
+        if self.thinking_level is not None and self.thinking_budget is not None:
+            raise ValueError(
+                "Both thinking_level and thinking_budget cannot be specified together. "
+                "See https://ai.google.dev/gemini-api/docs/thinking?utm_source=chatgpt.com#levels-budgets"
+            )
+        return self
 
 
 class HuggingFaceParams(EngineParams):

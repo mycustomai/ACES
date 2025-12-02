@@ -160,17 +160,16 @@ class LMMAgent:
             for field in ["safety_settings", "top_p", "top_k"]:
                 if field in params_dict and params_dict[field] is not None:
                     gemini_kwargs[field] = params_dict[field]
-            
+
             final_api_key = api_key or config.google_api_key
             if not final_api_key:
                 raise ValueError("No Google API key provided. Set GOOGLE_API_KEY environment variable or provide api_key parameter.")
-            
+
             return ChatGoogleGenerativeAI(
                 model=model,
                 google_api_key=final_api_key,
                 temperature=temperature,
                 # TODO: ensure that model-specific config YAML parses this correctly
-                #thinking_budget=0,
                 max_retries=1,
                 timeout=10,
                 **gemini_kwargs,
