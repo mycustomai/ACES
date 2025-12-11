@@ -33,6 +33,7 @@ class ScreenshotWorkResult:
     message: str
     experiment_id: str
     experiment_data_hash: Optional[str] = None
+    will_retry: bool = False
 
 
 def compute_experiment_data_hash(experiment_df: pd.DataFrame) -> str:
@@ -232,7 +233,10 @@ def _retry_failed_items(failed_items, worker_id, env, server_url, result_queue, 
     
     # Restart environment for retry
     if env and hasattr(env, 'driver'):
-        env.driver.quit()
+        if env.driver:
+            env.driver.quit()
+        else:
+            _print(f"Worker {worker_id} - env.driver is None during retry, skipping quit")
     
     # Reinitialize environment
     from agent.src.environment import ShoppingEnvironment
@@ -350,6 +354,7 @@ def screenshot_worker_process(worker_id: int, work_queue: mp.JoinableQueue, resu
                         # Chrome/WebDriver error - check if we can restart
                         if chrome_restart_count < max_chrome_restarts:
                             failed_items.append(work_item)
+                            result.will_retry = True  # Mark that this will be retried
                             print(f"Worker {worker_id} - Chrome error, will retry: {result.message[:100]}...")
                         else:
                             # Too many restarts, give up on this item
@@ -400,7 +405,10 @@ def screenshot_worker_process(worker_id: int, work_queue: mp.JoinableQueue, resu
     finally:
         # Clean up resources
         if env and hasattr(env, 'driver'):
-            env.driver.quit()
+            if env.driver:
+                env.driver.quit()
+            else:
+                _print(f"Worker {worker_id} - env.driver is None, skipping quit (Chrome init likely failed)")
         if server:
             server.should_exit = True
 
@@ -574,12 +582,8 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
             try:
                 result = result_queue.get(timeout=30)
 
-                # Don't count Chrome crash results that will be retried
-                # (worker will put another result after retry)
-                is_chrome_crash_pending_retry = (
-                    not result.success and "Chrome crash detected:" in result.message
-                )
-                if not is_chrome_crash_pending_retry:
+                # Don't count results that will be retried (worker will put another result after retry)
+                if not result.will_retry:
                     results_collected += 1
 
                 # Track experiment data hashes for isolation verification
@@ -593,7 +597,7 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
                         successful_count += 1
                         if progress_callback:
                             progress_callback(successful_count)
-                elif not is_chrome_crash_pending_retry:
+                elif not result.will_retry:
                     # Only count as error if not pending retry
                     error_count += 1
                     if verbose:
