@@ -245,7 +245,7 @@ def _retry_failed_items(failed_items, worker_id, env, server_url, result_queue, 
         print(f"Worker {worker_id} restarted Chrome (restart #{chrome_restart_count + 1})")
     
     for retry_item in failed_items:
-        result = process_screenshot_item(retry_item, worker_id, env)
+        result = process_screenshot_item_with_retry(retry_item, worker_id, env)
         result_queue.put(result)
     
     return env
