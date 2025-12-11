@@ -91,10 +91,11 @@ class ScreenshotValidationService:
                     def progress_callback(completed: int):
                         progress.update(task, completed=completed)
 
+                    use_num_workers = min(num_workers, len(missing_experiments))
                     collect_screenshots_parallel(
                         missing_experiments,
                         dataset_path,
-                        num_workers,
+                        use_num_workers,
                         verbose=self.debug_mode,
                         progress_callback=progress_callback,
                     )
