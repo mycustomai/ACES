@@ -456,65 +456,55 @@ def process_screenshot_item(work_item: ScreenshotWorkItem, worker_id: int, env: 
     """
     experiment_data = work_item.experiment_data
     screenshots_dir = work_item.screenshots_dir
-    
-    try:
-        from sandbox import set_experiment_data, get_experiment_data
-        
-        # Set experiment data in this process (isolated from other workers)
-        set_experiment_data(experiment_data.experiment_df)
-        
-        # Verify server has correct experiment data by checking what it sees
-        server_data = get_experiment_data()
-        server_data_df = pd.DataFrame(server_data) if server_data else pd.DataFrame()
-        actual_hash = compute_experiment_data_hash(server_data_df) if not server_data_df.empty else "empty"
-        
-        # Extract experiment details from ExperimentData
-        query = experiment_data.query
-        experiment_label = experiment_data.experiment_label
-        experiment_number = experiment_data.experiment_number
-        
-        # Create screenshot directory
-        screenshot_dir = screenshots_dir / query / experiment_label
-        screenshot_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate filename
-        filename = f"{query}_{experiment_label}_{experiment_number}.png"
-        screenshot_path = screenshot_dir / filename
-        
-        # Skip if screenshot already exists and is valid
-        if is_valid_png(screenshot_path):
-            return ScreenshotWorkResult(
-                success=True,
-                worker_id=worker_id,
-                message=f"Skipped existing: {screenshot_path}",
-                experiment_id=experiment_data.experiment_id,
-                experiment_data_hash=actual_hash
-            )
-        
-        # Navigate and capture screenshot
-        env._navigate_to_product_search(query)
-        screenshot = env.capture_screenshot()
-        
-        # Save screenshot to file
-        with open(screenshot_path, 'wb') as f:
-            f.write(screenshot)
-        
+
+    from sandbox import set_experiment_data, get_experiment_data
+
+    # Set experiment data in this process (isolated from other workers)
+    set_experiment_data(experiment_data.experiment_df)
+
+    # Verify server has correct experiment data by checking what it sees
+    server_data = get_experiment_data()
+    server_data_df = pd.DataFrame(server_data) if server_data else pd.DataFrame()
+    actual_hash = compute_experiment_data_hash(server_data_df) if not server_data_df.empty else "empty"
+
+    # Extract experiment details from ExperimentData
+    query = experiment_data.query
+    experiment_label = experiment_data.experiment_label
+    experiment_number = experiment_data.experiment_number
+
+    # Create screenshot directory
+    screenshot_dir = screenshots_dir / query / experiment_label
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate filename
+    filename = f"{query}_{experiment_label}_{experiment_number}.png"
+    screenshot_path = screenshot_dir / filename
+
+    # Skip if screenshot already exists and is valid
+    if is_valid_png(screenshot_path):
         return ScreenshotWorkResult(
             success=True,
             worker_id=worker_id,
-            message=f"Saved: {screenshot_path}",
+            message=f"Skipped existing: {screenshot_path}",
             experiment_id=experiment_data.experiment_id,
             experiment_data_hash=actual_hash
         )
-        
-    except Exception as e:
-        return ScreenshotWorkResult(
-            success=False,
-            worker_id=worker_id,
-            message=f"Item processing error: {str(e)}",
-            experiment_id=experiment_data.experiment_id,
-            experiment_data_hash="error"
-        )
+
+    # Navigate and capture screenshot
+    env._navigate_to_product_search(query)
+    screenshot = env.capture_screenshot()
+
+    # Save screenshot to file
+    with open(screenshot_path, 'wb') as f:
+        f.write(screenshot)
+
+    return ScreenshotWorkResult(
+        success=True,
+        worker_id=worker_id,
+        message=f"Saved: {screenshot_path}",
+        experiment_id=experiment_data.experiment_id,
+        experiment_data_hash=actual_hash
+    )
 
 
 def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path: str, num_workers: int = 4, verbose: bool = False, progress_callback=None):
