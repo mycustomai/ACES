@@ -354,10 +354,8 @@ def screenshot_worker_process(worker_id: int, work_queue: mp.JoinableQueue, resu
                         else:
                             # Too many restarts, give up on this item
                             print(f"Worker {worker_id} - Too many Chrome restarts ({chrome_restart_count}), giving up on item")
-                            result_queue.put(result)
-                    else:
-                        # Either success or non-WebDriver error
-                        result_queue.put(result)
+                    # Always put result to queue (main loop will handle retry counting)
+                    result_queue.put(result)
                 finally:
                     work_queue.task_done()
                 
@@ -585,12 +583,19 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
         while results_collected < len(work_items):
             try:
                 result = result_queue.get(timeout=30)
-                results_collected += 1
-                
+
+                # Don't count Chrome crash results that will be retried
+                # (worker will put another result after retry)
+                is_chrome_crash_pending_retry = (
+                    not result.success and "Chrome crash detected:" in result.message
+                )
+                if not is_chrome_crash_pending_retry:
+                    results_collected += 1
+
                 # Track experiment data hashes for isolation verification
                 if result.experiment_data_hash and result.experiment_data_hash != "error":
                     experiment_hashes.add(result.experiment_data_hash)
-                
+
                 if result.success:
                     if "Skipped existing" in result.message:
                         skipped_count += 1
@@ -598,7 +603,8 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
                         successful_count += 1
                         if progress_callback:
                             progress_callback(successful_count)
-                else:
+                elif not is_chrome_crash_pending_retry:
+                    # Only count as error if not pending retry
                     error_count += 1
                     if verbose:
                         print(f"Worker {result.worker_id} error: {result.message}")
