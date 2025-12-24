@@ -68,11 +68,13 @@ class ScreenshotValidationService:
         """
         try:
             if parallel:
-                _print(
-                    f"[bold blue]Generating missing screenshots with {num_workers} workers..."
-                )
-
                 missing_experiments = get_missing_screenshots(experiments, dataset_path)
+                missing_experiment_count = len(missing_experiments)
+
+                use_num_workers = min(num_workers, missing_experiment_count)
+                _print(
+                    f"[bold blue]Generating {missing_experiment_count} missing screenshots with {use_num_workers} workers..."
+                )
 
                 # Create progress bar
                 with Progress(
@@ -85,7 +87,7 @@ class ScreenshotValidationService:
                     console=None,
                 ) as progress:
                     task = progress.add_task(
-                        "Generating screenshots...", total=len(missing_experiments)
+                        "Generating screenshots...", total=missing_experiment_count
                     )
 
                     def progress_callback(completed: int):
@@ -94,7 +96,7 @@ class ScreenshotValidationService:
                     collect_screenshots_parallel(
                         missing_experiments,
                         dataset_path,
-                        num_workers,
+                        use_num_workers,
                         verbose=self.debug_mode,
                         progress_callback=progress_callback,
                     )

@@ -33,6 +33,7 @@ class ScreenshotWorkResult:
     message: str
     experiment_id: str
     experiment_data_hash: Optional[str] = None
+    will_retry: bool = False
 
 
 def compute_experiment_data_hash(experiment_df: pd.DataFrame) -> str:
@@ -232,7 +233,10 @@ def _retry_failed_items(failed_items, worker_id, env, server_url, result_queue, 
     
     # Restart environment for retry
     if env and hasattr(env, 'driver'):
-        env.driver.quit()
+        if env.driver:
+            env.driver.quit()
+        else:
+            _print(f"Worker {worker_id} - env.driver is None during retry, skipping quit")
     
     # Reinitialize environment
     from agent.src.environment import ShoppingEnvironment
@@ -245,7 +249,7 @@ def _retry_failed_items(failed_items, worker_id, env, server_url, result_queue, 
         print(f"Worker {worker_id} restarted Chrome (restart #{chrome_restart_count + 1})")
     
     for retry_item in failed_items:
-        result = process_screenshot_item(retry_item, worker_id, env)
+        result = process_screenshot_item_with_retry(retry_item, worker_id, env)
         result_queue.put(result)
     
     return env
@@ -350,14 +354,13 @@ def screenshot_worker_process(worker_id: int, work_queue: mp.JoinableQueue, resu
                         # Chrome/WebDriver error - check if we can restart
                         if chrome_restart_count < max_chrome_restarts:
                             failed_items.append(work_item)
+                            result.will_retry = True  # Mark that this will be retried
                             print(f"Worker {worker_id} - Chrome error, will retry: {result.message[:100]}...")
                         else:
                             # Too many restarts, give up on this item
                             print(f"Worker {worker_id} - Too many Chrome restarts ({chrome_restart_count}), giving up on item")
-                            result_queue.put(result)
-                    else:
-                        # Either success or non-WebDriver error
-                        result_queue.put(result)
+                    # Always put result to queue (main loop will handle retry counting)
+                    result_queue.put(result)
                 finally:
                     work_queue.task_done()
                 
@@ -402,7 +405,10 @@ def screenshot_worker_process(worker_id: int, work_queue: mp.JoinableQueue, resu
     finally:
         # Clean up resources
         if env and hasattr(env, 'driver'):
-            env.driver.quit()
+            if env.driver:
+                env.driver.quit()
+            else:
+                _print(f"Worker {worker_id} - env.driver is None, skipping quit (Chrome init likely failed)")
         if server:
             server.should_exit = True
 
@@ -458,65 +464,55 @@ def process_screenshot_item(work_item: ScreenshotWorkItem, worker_id: int, env: 
     """
     experiment_data = work_item.experiment_data
     screenshots_dir = work_item.screenshots_dir
-    
-    try:
-        from sandbox import set_experiment_data, get_experiment_data
-        
-        # Set experiment data in this process (isolated from other workers)
-        set_experiment_data(experiment_data.experiment_df)
-        
-        # Verify server has correct experiment data by checking what it sees
-        server_data = get_experiment_data()
-        server_data_df = pd.DataFrame(server_data) if server_data else pd.DataFrame()
-        actual_hash = compute_experiment_data_hash(server_data_df) if not server_data_df.empty else "empty"
-        
-        # Extract experiment details from ExperimentData
-        query = experiment_data.query
-        experiment_label = experiment_data.experiment_label
-        experiment_number = experiment_data.experiment_number
-        
-        # Create screenshot directory
-        screenshot_dir = screenshots_dir / query / experiment_label
-        screenshot_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate filename
-        filename = f"{query}_{experiment_label}_{experiment_number}.png"
-        screenshot_path = screenshot_dir / filename
-        
-        # Skip if screenshot already exists and is valid
-        if is_valid_png(screenshot_path):
-            return ScreenshotWorkResult(
-                success=True,
-                worker_id=worker_id,
-                message=f"Skipped existing: {screenshot_path}",
-                experiment_id=experiment_data.experiment_id,
-                experiment_data_hash=actual_hash
-            )
-        
-        # Navigate and capture screenshot
-        env._navigate_to_product_search(query)
-        screenshot = env.capture_screenshot()
-        
-        # Save screenshot to file
-        with open(screenshot_path, 'wb') as f:
-            f.write(screenshot)
-        
+
+    from sandbox import set_experiment_data, get_experiment_data
+
+    # Set experiment data in this process (isolated from other workers)
+    set_experiment_data(experiment_data.experiment_df)
+
+    # Verify server has correct experiment data by checking what it sees
+    server_data = get_experiment_data()
+    server_data_df = pd.DataFrame(server_data) if server_data else pd.DataFrame()
+    actual_hash = compute_experiment_data_hash(server_data_df) if not server_data_df.empty else "empty"
+
+    # Extract experiment details from ExperimentData
+    query = experiment_data.query
+    experiment_label = experiment_data.experiment_label
+    experiment_number = experiment_data.experiment_number
+
+    # Create screenshot directory
+    screenshot_dir = screenshots_dir / query / experiment_label
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate filename
+    filename = f"{query}_{experiment_label}_{experiment_number}.png"
+    screenshot_path = screenshot_dir / filename
+
+    # Skip if screenshot already exists and is valid
+    if is_valid_png(screenshot_path):
         return ScreenshotWorkResult(
             success=True,
             worker_id=worker_id,
-            message=f"Saved: {screenshot_path}",
+            message=f"Skipped existing: {screenshot_path}",
             experiment_id=experiment_data.experiment_id,
             experiment_data_hash=actual_hash
         )
-        
-    except Exception as e:
-        return ScreenshotWorkResult(
-            success=False,
-            worker_id=worker_id,
-            message=f"Item processing error: {str(e)}",
-            experiment_id=experiment_data.experiment_id,
-            experiment_data_hash="error"
-        )
+
+    # Navigate and capture screenshot
+    env._navigate_to_product_search(query)
+    screenshot = env.capture_screenshot()
+
+    # Save screenshot to file
+    with open(screenshot_path, 'wb') as f:
+        f.write(screenshot)
+
+    return ScreenshotWorkResult(
+        success=True,
+        worker_id=worker_id,
+        message=f"Saved: {screenshot_path}",
+        experiment_id=experiment_data.experiment_id,
+        experiment_data_hash=actual_hash
+    )
 
 
 def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path: str, num_workers: int = 4, verbose: bool = False, progress_callback=None):
@@ -585,12 +581,15 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
         while results_collected < len(work_items):
             try:
                 result = result_queue.get(timeout=30)
-                results_collected += 1
-                
+
+                # Don't count results that will be retried (worker will put another result after retry)
+                if not result.will_retry:
+                    results_collected += 1
+
                 # Track experiment data hashes for isolation verification
                 if result.experiment_data_hash and result.experiment_data_hash != "error":
                     experiment_hashes.add(result.experiment_data_hash)
-                
+
                 if result.success:
                     if "Skipped existing" in result.message:
                         skipped_count += 1
@@ -598,7 +597,8 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
                         successful_count += 1
                         if progress_callback:
                             progress_callback(successful_count)
-                else:
+                elif not result.will_retry:
+                    # Only count as error if not pending retry
                     error_count += 1
                     if verbose:
                         print(f"Worker {result.worker_id} error: {result.message}")
