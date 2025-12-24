@@ -31,6 +31,9 @@ dependencies = [
 
 [dependency-groups]
 analysis = [
+    "matplotlib>=3.10.8",
+    "patsy>=1.0.2",
+    "seaborn>=0.13.2",
     "typer>=0.20.1",
 ]
 dev = [
