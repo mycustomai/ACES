@@ -1,0 +1,4 @@
+price:
+  - 'sc_price_reduce_01_percent': '1% Price Reduction'
+  - 'sc_price_reduce_05_percent': '5% Price Reduction'
+  - 'sc_price_reduce_10_percent': '10% Price Reduction'
