@@ -30,6 +30,9 @@ dependencies = [
 ]
 
 [dependency-groups]
+analysis = [
+    "typer>=0.20.1",
+]
 dev = [
     "ipykernel>=7.1.0",
     "isort>=7.0.0",
