@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from experiments.analysis.common import filter_valid_experiments
 
 
 def analyze_market_share(csv_path: Path, short_titles: dict, output_filepath: Path) -> None:
@@ -13,18 +14,28 @@ def analyze_market_share(csv_path: Path, short_titles: dict, output_filepath: Pa
         output_filepath: Path to save the output CSV
     """
     df = pd.read_csv(csv_path)
-    stats = calculate_selection_stats(df, short_titles)
+    filtered_df = filter_valid_experiments(df)
+    stats = calculate_selection_stats(filtered_df)
+
+    # add human-readable names
+
+    flat_short_titles: dict[tuple[str, str], str] = {
+        (query, title): short_name
+        for query, titles in short_titles.items()
+        for title, short_name in titles.items()
+    }  # (query, title) -> short_name
+    stats['short_title'] = stats.index.map(flat_short_titles)
+
     stats.to_csv(output_filepath)
 
 
-def calculate_selection_stats(df: pd.DataFrame, short_titles: dict) -> pd.DataFrame:
+def calculate_selection_stats(df: pd.DataFrame) -> pd.DataFrame:
     """Calculate selection statistics for products, grouped by query.
 
     Computes selection percentages within each query's product set.
 
     Args:
         df: Input dataframe with 'query', 'title', and 'selected' columns
-        short_titles: Nested dict mapping query -> product title -> short name
 
     Returns:
         DataFrame with columns: sum, count, percentage, std_error, short_title
@@ -37,14 +48,6 @@ def calculate_selection_stats(df: pd.DataFrame, short_titles: dict) -> pd.DataFr
     n = stats['count']
     p = stats['sum'] / n
     stats['std_error'] = np.sqrt(p * (1 - p) / n) * 100
-
-    # Flatten nested short_titles dict to (query, title) -> short_name
-    flat_short_titles = {
-        (query, title): short_name
-        for query, titles in short_titles.items()
-        for title, short_name in titles.items()
-    }
-    stats['short_title'] = stats.index.map(flat_short_titles)
 
     return stats
 
