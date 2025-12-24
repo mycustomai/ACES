@@ -3,6 +3,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+
+# TODO: fix unsatisfactory pattern. Define global location for `config` dir
 REPO_ROOT = Path(__file__).parent.parent.parent
 
 
@@ -16,6 +18,12 @@ def load_query_shortnames() -> dict[str, dict[str, str]]:
 def load_model_display_names() -> dict[str, str]:
     """Load model display names from YAML config."""
     path = REPO_ROOT / "config" / "experiment_metadata" / "model_display_names.yaml"
+    with open(path) as f:
+        return yaml.safe_load(f)
+
+
+def get_rationality_suite_experiment_names() -> dict[str, dict[str, str]]:
+    path = REPO_ROOT / "config" / "experiment_metadata" / "rationality_suite_experiment_names.yaml"
     with open(path) as f:
         return yaml.safe_load(f)
 
