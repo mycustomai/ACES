@@ -116,7 +116,7 @@ def ensure_all_screenshots_exist(experiments: list[ExperimentData], dataset_path
         _print(f"Missing {len(missing)} screenshots:")
         return False
     
-    print("All required screenshots exist and are valid.")
+    _print("All required screenshots exist and are valid.")
     return True
 
 
@@ -173,7 +173,7 @@ def collect_screenshots(combined_df: pd.DataFrame, dataset_path: str):
         
         # Skip if screenshot already exists and is valid
         if is_valid_png(screenshot_path):
-            print(f"Skipping existing screenshot: {screenshot_path}")
+            _print(f"Skipping existing screenshot: {screenshot_path}")
             continue
         
         set_experiment_data(data.experiment_df)
@@ -184,7 +184,7 @@ def collect_screenshots(combined_df: pd.DataFrame, dataset_path: str):
         with open(screenshot_path, 'wb') as f:
             f.write(screenshot)
             
-        print(f"Saved screenshot: {screenshot_path}")
+        _print(f"Saved screenshot: {screenshot_path}")
 
 
 class WorkerManager:
@@ -601,9 +601,9 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
                     # Only count as error if not pending retry
                     error_count += 1
                     if verbose:
-                        print(f"Worker {result.worker_id} error: {result.message}")
+                        _print(f"Worker {result.worker_id} error: {result.message}")
             except mp.TimeoutError:
-                print(f"Timeout waiting for results - terminating {len(processes)} workers")
+                _print(f"Timeout waiting for results - terminating {len(processes)} workers")
                 for process in processes:
                     if process.is_alive():
                         process.terminate()
@@ -616,36 +616,36 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
         for process in processes:
             process.join(timeout=10)
             if process.is_alive():
-                print(f"Force terminating worker process {process.pid}")
+                _print(f"Force terminating worker process {process.pid}")
                 process.terminate()
                 process.join(timeout=5)
                 if process.is_alive():
-                    print(f"Force killing worker process {process.pid}")
+                    _print(f"Force killing worker process {process.pid}")
                     process.kill()
                     process.join()
         
         elapsed_time = time.time() - start_time
         success_rate = successful_count / len(work_items) if len(work_items) > 0 else 0
 
-        print(f"\nQueue-based parallel screenshot collection completed:")
-        print(f"  Total work items: {len(work_items)}")
-        print(f"  Results collected: {results_collected}")
-        print(f"  Newly generated: {successful_count}")
-        print(f"  Skipped existing: {skipped_count}")
-        print(f"  Errors: {error_count}")
-        print(f"  Success rate: {success_rate:.1%}")
-        print(f"  Total time: {elapsed_time:.1f} seconds")
+        _print(f"\nQueue-based parallel screenshot collection completed:")
+        _print(f"  Total work items: {len(work_items)}")
+        _print(f"  Results collected: {results_collected}")
+        _print(f"  Newly generated: {successful_count}")
+        _print(f"  Skipped existing: {skipped_count}")
+        _print(f"  Errors: {error_count}")
+        _print(f"  Success rate: {success_rate:.1%}")
+        _print(f"  Total time: {elapsed_time:.1f} seconds")
         if elapsed_time > 0 and successful_count > 0:
-            print(f"  Average rate: {successful_count / elapsed_time:.1f} screenshots/sec")
+            _print(f"  Average rate: {successful_count / elapsed_time:.1f} screenshots/sec")
         
         # Report memory isolation status
-        print(f"  Memory isolation: {len(experiment_hashes)} unique experiment data hashes detected")
+        _print(f"  Memory isolation: {len(experiment_hashes)} unique experiment data hashes detected")
         if len(experiment_hashes) > 1:
-            print(f"  ✓ Workers successfully isolated - each saw different experiment data")
+            _print(f"  ✓ Workers successfully isolated - each saw different experiment data")
         elif len(experiment_hashes) == 1:
-            print(f"  ⚠ All workers saw identical experiment data - possible sharing issue")
+            _print(f"  ⚠ All workers saw identical experiment data - possible sharing issue")
         else:
-            print(f"  ⚠ No valid experiment data hashes captured")
+            _print(f"  ⚠ No valid experiment data hashes captured")
         
     except Exception as e:
         # Clean up processes aggressively
@@ -659,4 +659,4 @@ def collect_screenshots_parallel(experiments: list[ExperimentData], dataset_path
         raise RuntimeError(f"Parallel screenshot collection failed: {e}") from e
     
     finally:
-        print("All worker processes have completed")
+        _print("All worker processes have completed")
