@@ -43,7 +43,7 @@ def market_share(csv_file: Path) -> None:
 
 
 @app.command("choice-model")
-def market_share(csv_file: Path) -> None:
+def choice_model(csv_file: Path) -> None:
     """Generate a choice-model from a CSV file."""
     target_path = Path("artifacts/analysis")
     target_path.mkdir(parents=True, exist_ok=True)
