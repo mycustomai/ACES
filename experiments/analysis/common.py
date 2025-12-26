@@ -1,7 +1,15 @@
+from enum import StrEnum
 from pathlib import Path
 
 import pandas as pd
 import yaml
+
+
+class SanityCheckMode(StrEnum):
+    PRICE = "price"
+    RATING = "rating"
+    INSTRUCTION = "instruction"
+    AR_PRICE = "ar_price"
 
 
 # TODO: fix unsatisfactory pattern. Define global location for `config` dir
