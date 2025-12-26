@@ -1,5 +1,4 @@
-from collections import defaultdict
-from typing import TypedDict, Dict, Iterable
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -8,101 +7,89 @@ import scipy.stats as stats
 from experiments.analysis.common import SanityCheckMode
 
 
-class ExperimentSanityCheckResults(TypedDict):
-    total_experiments: int
-    experiments_without_error: int
-    passed_count: int
+def sanity_checks_passed(
+    df: pd.DataFrame,
+    experiment_labels: Iterable[str],
+    models: list[str],
+    queries: list[str],
+) -> pd.DataFrame:
+    mask = (
+        df["experiment_label"].isin(experiment_labels)
+        & df["model_name"].isin(models)
+        & df["query"].isin(queries)
+    )
+    df_filtered = df.loc[mask]
+
+    def experiment_passed(g: pd.DataFrame) -> pd.Series:
+        selected_sum = g["selected"].sum()
+        has_selection = selected_sum > 0
+        passed = has_selection and (
+            (g["selected"] == g["desired_choice"]).all() or selected_sum == 2
+        )
+        return pd.Series({"has_selection": has_selection, "passed": passed})
+
+    exp_results = df_filtered.groupby(
+        ["experiment_label", "model_name", "query", "experiment_number"], as_index=False
+    ).apply(experiment_passed, include_groups=False)
+
+    return exp_results.groupby(["experiment_label", "model_name", "query"]).agg(
+        total_experiments=("has_selection", "count"),
+        experiments_without_error=("has_selection", "sum"),
+        passed_count=("passed", "sum"),
+    )
 
 
-type ExperimentLabelKey = str
-type ModelNameKey = str
-type QueryKey = str
-type SanityCheckDict = Dict[ExperimentLabelKey, Dict[ModelNameKey, Dict[QueryKey, ExperimentSanityCheckResults]]]
+def get_mean_and_variance(data: pd.DataFrame) -> pd.DataFrame:
+    df = data.copy()
+    df["prop"] = 1 - df["passed_count"] / df["experiments_without_error"]
+    df["var"] = df["prop"] * (1 - df["prop"]) / df["experiments_without_error"]
+
+    def compute_pooled_stats(g: pd.DataFrame) -> pd.Series:
+        trials = g["experiments_without_error"].to_numpy()
+        props = g["prop"].to_numpy()
+        variances = g["var"].to_numpy()
+
+        n = trials.sum()
+        pooled_mu = (trials * props).sum() / n
+        pooled_var = (((trials - 1) * variances) + trials * (props - pooled_mu) ** 2).sum() / (n - 1)
+
+        ci = stats.norm.interval(0.95, loc=pooled_mu, scale=np.sqrt(pooled_var / n))
+        se = (ci[1] - ci[0]) / (2 * 1.96)
+
+        return pd.Series({
+            "mean": pooled_mu,
+            "ci_lo": ci[0],
+            "ci_hi": ci[1],
+            "std_error": 0.0 if np.isnan(se) else se,
+        })
+
+    return df.groupby(["experiment_label", "model_name"]).apply(
+        compute_pooled_stats, include_groups=False
+    )
 
 
-def sanity_checks_passed(df: pd.DataFrame, experiment_labels: Iterable[str], models: list[str], queries: list[str]) -> SanityCheckDict:
-    output = defaultdict(lambda: defaultdict(dict))
-    # TODO: use `groupby` and iterate AND/OR vectorize
-    for experiment_label in experiment_labels:
-        for model in models:
-            for query in queries:
-                df_filtered = df[(df["model_name"] == model) & (df["experiment_label"] == experiment_label) & (df["query"] == query)]
-                experiment_numbers = sorted(df_filtered["experiment_number"].unique())
-                experiments_without_error = 0
-                passed_count = 0
-                for experiment_number in experiment_numbers:
-                    df_filtered_exp = df_filtered[df_filtered["experiment_number"] == experiment_number]
-                    if df_filtered_exp["selected"].sum() > 0:
-                        experiments_without_error += 1
-                        # TODO: simplify
-                        if (df_filtered_exp["selected"] == df_filtered_exp["desired_choice"]).all() or df_filtered_exp["selected"].sum() == 2:
-                            passed_count += 1
-                        else:
-                            continue
-                if len(experiment_numbers) > 0:
-                    output[experiment_label][model][query] = {
-                        "total_experiments": len(experiment_numbers),
-                        "experiments_without_error": experiments_without_error,
-                        "passed_count": passed_count,
-                    }
-    return output
-
-
-def get_mean_and_variance(data: SanityCheckDict) -> dict:
-    meta_results = defaultdict(dict)
-    for experiment_label, models in data.items():
-        for model, queries in models.items():
-            successes = []
-            trials = []
-            for query, results in queries.items():
-                successes.append(results["passed_count"])
-                trials.append(results["experiments_without_error"])
-
-            successes = np.array(successes)
-            trials = np.array(trials)
-
-            props = 1 - successes / trials
-            variances = props * (1 - props) / trials
-
-            n = trials.sum()
-            pooled_mu = (trials * props).sum() / n
-            pooled_var = (((trials - 1) * variances) + trials * (props - pooled_mu)**2).sum() / (n - 1)
-
-            ci = stats.norm.interval(0.95, loc=pooled_mu, scale=np.sqrt(pooled_var / n))
-            meta_results[experiment_label][model] = (pooled_mu, (ci[0], ci[1]))
-
-    return meta_results
-
-
-def calculate_sanity_check(df: pd.DataFrame, check_name: SanityCheckMode, experiment_names: dict[str, dict[str, str]], model_display_names: dict[str, str]) -> pd.DataFrame:
+def calculate_sanity_check(
+    df: pd.DataFrame,
+    check_name: SanityCheckMode,
+    experiment_names: dict[str, dict[str, str]],
+    model_display_names: dict[str, str],
+) -> pd.DataFrame:
     selected_experiment_names = experiment_names[check_name]
+    models = df["model_name"].unique()
+    queries = df["query"].unique()
 
-    models = df["model_name"].unique().tolist()
-    queries = df["query"].unique().tolist()
-    success_data = sanity_checks_passed(df=df, experiment_labels=selected_experiment_names.keys(), models=models, queries=queries)
-    meta_data = get_mean_and_variance(success_data)
+    success_data = sanity_checks_passed(
+        df, experiment_labels=selected_experiment_names.keys(), models=models, queries=queries
+    )
+    meta_data = get_mean_and_variance(success_data).reset_index()
 
-    table_data = []
-    for model in models:
-        row = {"Model": model_display_names.get(model, model)}
-        for experiment_label in selected_experiment_names.keys():
-            if model in meta_data[experiment_label]:
-                mean, (ci_lo, ci_hi) = meta_data[experiment_label][model]
+    meta_data["cell"] = meta_data.apply(
+        lambda r: f"{r['mean']:.3f} ({r['std_error']:.3f})", axis=1
+    )
+    meta_data["display_exp"] = meta_data["experiment_label"].map(selected_experiment_names)
 
-                # calculate std err from confidence interval
-                # for 95% CI: mean ± 1.96*SE, so SE = (ci_hi - ci_lo) / (2 * 1.96)
-                se = (ci_hi - ci_lo) / (2 * 1.96)
+    table = meta_data.pivot(index="model_name", columns="display_exp", values="cell")
+    table.index = table.index.map(lambda m: model_display_names.get(m, m))
+    table.index.name = "Model"
 
-                # handle NaN
-                if np.isnan(se):
-                    row[selected_experiment_names[experiment_label]] = f"{mean:.3f} (0.000)"
-                else:
-                    row[selected_experiment_names[experiment_label]] = f"{mean:.3f} ({se:.3f})"
-            else:
-                row[selected_experiment_names[experiment_label]] = "---"
-        table_data.append(row)
-
-    results_table = pd.DataFrame(table_data)
-    results_table.set_index("Model", inplace=True)
-
-    return results_table
+    return table.reindex(columns=selected_experiment_names.values()).fillna("---")
