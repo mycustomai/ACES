@@ -36,21 +36,19 @@ def get_rationality_suite_experiment_names() -> dict[str, dict[str, str]]:
         return yaml.safe_load(f)
 
 
-def filter_valid_experiments(df: pd.DataFrame) -> pd.DataFrame:
-    """ Select experiments in which a product was selected.
-
-    Note:
-        `1` denotes that the model returned the correct, exact product name.
-        `2` denotes that the product was selected based on the title only.
-        Any negative sum indicates an unrecoverable error, and as such, the
-        experiment must be ignored.
+def filter_valid_experiments(orig_df: pd.DataFrame) -> pd.DataFrame:
+    """ Remove invalid experiments from input df. Input df is mutated.
 
     See Also:
         `agent/src/logger.py` for how the model outputs are parsed and products
         are selected.
     """
+    df = orig_df.copy()
+
+    df["selected"] = df["selected"].clip(lower=0, upper=1)
+
     valid_experiments = df.groupby(["model_name", "experiment_label", "query", "experiment_number"]).filter(
-        lambda x: x["selected"].sum() >= 1
+        lambda x: x["selected"].sum() == 1
     )
     return valid_experiments
 
