@@ -66,7 +66,8 @@ def fit_choice_model(df: pd.DataFrame) -> pd.DataFrame:
         model = sm.ConditionalLogit(y, x, groups=group_df["choice_set_id"])
         result = model.fit(method="newton")
 
-        params = result.params.copy()
+        # Filter out title coefficients
+        params = result.params[~result.params.index.str.startswith("C(title)")].copy()
         llf = result.llf
         llnull = model.loglike(np.zeros(len(result.params)))
         params["llf"] = llf
@@ -74,7 +75,7 @@ def fit_choice_model(df: pd.DataFrame) -> pd.DataFrame:
         params["pseudo_r2"] = 1 - llf / llnull
         coefficients[model_name] = params
 
-    return pd.DataFrame(coefficients)
+    return pd.DataFrame(coefficients).T
 
 
 def generate_choice_model_results(input_csv: Path, output_filepath: Path) -> None:
