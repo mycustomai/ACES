@@ -42,8 +42,6 @@ def calculate_selection_stats(df: pd.DataFrame, error_term: int = 0.001) -> pd.D
         DataFrame with columns: sum, count, percentage, std_error, short_title
         indexed by (query, title)
     """
-    df["selected"] = df["selected"].clip(lower=0)
-
     out = (
         df.groupby(["query", "title", "model_name"])["selected"]
         .agg(
@@ -59,8 +57,10 @@ def calculate_selection_stats(df: pd.DataFrame, error_term: int = 0.001) -> pd.D
     out.drop(columns=["mean", "sem"], inplace=True)
 
     # validate percentage sums
-    g = out.groupby(["query", "model_name"])
-    grouped_sums = g["percentage"].sum()
+    grouped_sums = (
+        out.groupby(["query", "model_name"])["percentage"]
+        .agg("sum")
+    )
     invalid = grouped_sums[(grouped_sums > 100 + error_term) | (grouped_sums < 100 - error_term)]
     assert len(invalid) == 0
 
