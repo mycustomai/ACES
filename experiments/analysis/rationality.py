@@ -49,12 +49,12 @@ def get_mean_and_variance(data: pd.DataFrame) -> pd.DataFrame:
         props = g["prop"].to_numpy()
         variances = g["var"].to_numpy()
 
+        pooled_mu = np.average(props, weights=trials)
         n = trials.sum()
-        pooled_mu = (trials * props).sum() / n
         pooled_var = (((trials - 1) * variances) + trials * (props - pooled_mu) ** 2).sum() / (n - 1)
 
-        ci = stats.norm.interval(0.95, loc=pooled_mu, scale=np.sqrt(pooled_var / n))
-        se = (ci[1] - ci[0]) / (2 * 1.96)
+        se = np.sqrt(pooled_var / n)
+        ci = stats.norm.interval(0.95, loc=pooled_mu, scale=se)
 
         return pd.Series({
             "mean": pooled_mu,
