@@ -165,7 +165,7 @@ If you use ACES in your research, please cite:
 @article{allouah2025aces,
   title={What is your AI Agent buying? Evaluation, Implications and Emerging Questions for Agentic e-Commerce},
   author={Allouah, Amine and Besbes, Omar and Figueroa, Josué D and Kanoria, Yash and Kumar, Akshit},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
+  journal={arXiv preprint arXiv:2508.02630},
   year={2025}
 }
 ```
