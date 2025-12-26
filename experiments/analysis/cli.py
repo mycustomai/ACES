@@ -63,8 +63,8 @@ def _make_sanity_check_command(mode: SanityCheckMode):
     return command
 
 
-for mode in SanityCheckMode:
-    rationality_app.command(mode.value)(_make_sanity_check_command(mode))
+for _mode in SanityCheckMode:
+    rationality_app.command(_mode.value)(_make_sanity_check_command(_mode))
 
 
 if __name__ == "__main__":
