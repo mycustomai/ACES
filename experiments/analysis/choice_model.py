@@ -12,6 +12,9 @@ from experiments.analysis.common import filter_valid_experiments
 def _filter_experiments(df: pd.DataFrame) -> pd.DataFrame:
     filtered_df = filter_valid_experiments(df)
 
+    # convert selected column to binary (0 or 1)
+    filtered_df["selected"] = (filtered_df["selected"] > 0).astype(int)
+
     # filter ignored queries
     sel_queries = filtered_df["query"].unique()
     idx = np.where(sel_queries == "usb_cable")
