@@ -82,21 +82,21 @@ def _build_choice_table(coefficients: dict[str, float], rng: np.random.Generator
 def test_choice_model_recovers_coefficients(tmp_path):
     rng = np.random.default_rng(7)
     true_coefficients = {
-        "row_1_dummy": 0.2,
-        "col_1_dummy": 0.1,
-        "col_2_dummy": -0.05,
-        "col_3_dummy": 0.05,
-        "log_price": -0.3,
-        "log_rating_count": 0.12,
-        "rating": 0.35,
-        "sponsored_tag": -0.08,
-        "overall_pick_tag": 0.25,
-        "scarcity_tag": 0.05,
+        "row_1_dummy": 0.6,
+        "col_1_dummy": 0.5,
+        "col_2_dummy": -0.4,
+        "col_3_dummy": 0.3,
+        "log_price": -0.8,
+        "log_rating_count": 0.4,
+        "rating": 0.9,
+        "sponsored_tag": -0.4,
+        "overall_pick_tag": 0.6,
+        "scarcity_tag": 0.3,
     }
 
     input_path = tmp_path / "choice_model.csv"
     output_path = tmp_path / "choice_model_results.csv"
-    table = _build_choice_table(true_coefficients, rng, n_sets=500)
+    table = _build_choice_table(true_coefficients, rng, n_sets=1000)
     table.to_csv(input_path, index=False)
 
     generate_choice_model_results(input_path, output_path)
