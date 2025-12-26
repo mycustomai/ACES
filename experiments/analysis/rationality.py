@@ -1,9 +1,11 @@
 from collections import defaultdict
-from typing import TypedDict, Dict, Iterable, Literal
+from typing import TypedDict, Dict, Iterable
 
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+
+from experiments.analysis.common import SanityCheckMode
 
 
 class ExperimentSanityCheckResults(TypedDict):
@@ -72,7 +74,7 @@ def get_mean_and_variance(data: SanityCheckDict) -> dict:
     return meta_results
 
 
-def calculate_sanity_check(df: pd.DataFrame, check_name: Literal["price", "instruction", "rating"], experiment_names: dict[str, dict[str, str]], model_display_names: dict[str, str]) -> pd.DataFrame:
+def calculate_sanity_check(df: pd.DataFrame, check_name: SanityCheckMode, experiment_names: dict[str, dict[str, str]], model_display_names: dict[str, str]) -> pd.DataFrame:
     selected_experiment_names = experiment_names[check_name]
 
     models = df["model_name"].unique().tolist()
