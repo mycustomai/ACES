@@ -63,12 +63,6 @@ def fit_choice_model(df: pd.DataFrame) -> pd.DataFrame:
     coefficients = {}
     for model_name, group_df in df.groupby("model_name"):
         y, x = dmatrices(model_formula, data=group_df, return_type="dataframe")
-
-        # Diagnostic: Check unique values in selected
-        print(f"Model: {model_name}")
-        print(f"Unique values in y: {y['selected'].unique()}")
-        print(f"NaN count in y: {y['selected'].isna().sum()}")
-
         model = sm.ConditionalLogit(y, x, groups=group_df["choice_set_id"])
         result = model.fit(method="newton")
 
