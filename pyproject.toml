@@ -36,6 +36,7 @@ analysis = [
     "seaborn>=0.13.2",
     "typer>=0.20.1",
     "scipy>=1.16.3",
+    "statsmodels>=0.14.6",
 ]
 dev = [
     "ipykernel>=7.1.0",
