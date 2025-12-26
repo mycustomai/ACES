@@ -2,7 +2,6 @@ ar_price:
   sc_price_random_low_variance: "Random (Low Variance)"
   sc_price_random_high_variance: "Random (High Variance)"
   sc_price_reduce_10_cent: "10¢ Price Reduction"
-  sc_price_reduce_5_cent: "5¢ Price Reduction"
   sc_price_reduce_1_cent: "1¢ Price Reduction"
 price:
   sc_price_reduce_01_percent: '1% Price Reduction'
