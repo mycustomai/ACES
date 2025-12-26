@@ -8,6 +8,7 @@ from experiments.analysis.common import (
     load_query_shortnames,
     load_model_display_names,
     get_rationality_suite_experiment_names,
+    SanityCheckMode,
 )
 from experiments.analysis.market_share import analyze_market_share
 from experiments.analysis.rationality import calculate_sanity_check
@@ -40,55 +41,30 @@ def market_share(csv_file: Path) -> None:
     analyze_market_share(csv_file, short_titles=short_titles, output_filepath=output_filepath)
 
 
-@rationality_app.command("price")
-def rationality_price(csv_file: Path) -> None:
-    """Run price sanity checks."""
+def _run_sanity_check(csv_file: Path, mode: SanityCheckMode) -> None:
     experiment_names = get_rationality_suite_experiment_names()
     model_display_names = load_model_display_names()
 
     df = pd.read_csv(csv_file)
-    results = calculate_sanity_check(df, "price", experiment_names, model_display_names)
+    results = calculate_sanity_check(df, mode, experiment_names, model_display_names)
 
     target_path = Path("artifacts/analysis")
     target_path.mkdir(parents=True, exist_ok=True)
-    filename = f"{datetime.now():%Y%m%d%H%M%S}_price_sanity_check.csv"
+    filename = f"{datetime.now():%Y%m%d%H%M%S}_{mode}_sanity_check.csv"
     output_filepath = target_path / filename
     results.to_csv(output_filepath)
     print(f"Saved to {output_filepath}")
 
 
-@rationality_app.command("rating")
-def rationality_rating(csv_file: Path) -> None:
-    """Run rating sanity checks."""
-    experiment_names = get_rationality_suite_experiment_names()
-    model_display_names = load_model_display_names()
-
-    df = pd.read_csv(csv_file)
-    results = calculate_sanity_check(df, "rating", experiment_names, model_display_names)
-
-    target_path = Path("artifacts/analysis")
-    target_path.mkdir(parents=True, exist_ok=True)
-    filename = f"{datetime.now():%Y%m%d%H%M%S}_rating_sanity_check.csv"
-    output_filepath = target_path / filename
-    results.to_csv(output_filepath)
-    print(f"Saved to {output_filepath}")
+def _make_sanity_check_command(mode: SanityCheckMode):
+    def command(csv_file: Path) -> None:
+        _run_sanity_check(csv_file, mode)
+    command.__doc__ = f"Run {mode} sanity checks."
+    return command
 
 
-@rationality_app.command("instruction")
-def rationality_instruction(csv_file: Path) -> None:
-    """Run instruction sanity checks."""
-    experiment_names = get_rationality_suite_experiment_names()
-    model_display_names = load_model_display_names()
-
-    df = pd.read_csv(csv_file)
-    results = calculate_sanity_check(df, "instruction", experiment_names, model_display_names)
-
-    target_path = Path("artifacts/analysis")
-    target_path.mkdir(parents=True, exist_ok=True)
-    filename = f"{datetime.now():%Y%m%d%H%M%S}_instruction_sanity_check.csv"
-    output_filepath = target_path / filename
-    results.to_csv(output_filepath)
-    print(f"Saved to {output_filepath}")
+for mode in SanityCheckMode:
+    rationality_app.command(mode.value)(_make_sanity_check_command(mode))
 
 
 if __name__ == "__main__":
