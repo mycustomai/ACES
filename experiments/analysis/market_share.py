@@ -29,7 +29,7 @@ def analyze_market_share(csv_path: Path, short_titles: dict, output_filepath: Pa
     stats.to_csv(output_filepath)
 
 
-def calculate_selection_stats(df: pd.DataFrame, error_term: int = 4) -> pd.DataFrame:
+def calculate_selection_stats(df: pd.DataFrame, error_term: int = 0.001) -> pd.DataFrame:
     """Calculate selection statistics for products, grouped by query.
 
     Computes selection percentages within each query's product set.
