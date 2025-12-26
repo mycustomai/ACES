@@ -75,7 +75,7 @@ def fit_choice_model(df: pd.DataFrame) -> pd.DataFrame:
         params["pseudo_r2"] = 1 - llf / llnull
         coefficients[model_name] = params
 
-    return pd.DataFrame(coefficients).T
+    return pd.DataFrame(coefficients)
 
 
 def generate_choice_model_results(input_csv: Path, output_filepath: Path) -> None:
