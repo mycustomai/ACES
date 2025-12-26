@@ -41,14 +41,14 @@ def calculate_selection_stats(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with columns: sum, count, percentage, std_error, short_title
         indexed by (query, title)
     """
-    stats = df.groupby(['query', 'title', 'model_name'])['selected'].agg(['sum', 'count'])
-    stats["sum"] = stats["sum"].clip(lower=0)
-    stats['percentage'] = (stats['sum'] / stats['count']) * 100
-
-    n = stats['count']
-    p = stats['sum'] / n
-    stats['std_error'] = np.sqrt(p * (1 - p) / n) * 100
-
-    return stats
+    return (
+        df.groupby(["query", "title", "model_name"])["selected"]
+        .agg(["sum", "count"])
+        .assign(
+            sum=lambda x: x["sum"].clip(lower=0),
+            percentage=lambda x: x["sum"] / x["count"] * 100,
+            std_error=lambda x: np.sqrt(x["sum"] / x["count"] * (1 - x["sum"] / x["count"]) / x["count"]) * 100,
+        )
+    )
 
 
