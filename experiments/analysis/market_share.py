@@ -29,26 +29,39 @@ def analyze_market_share(csv_path: Path, short_titles: dict, output_filepath: Pa
     stats.to_csv(output_filepath)
 
 
-def calculate_selection_stats(df: pd.DataFrame) -> pd.DataFrame:
+def calculate_selection_stats(df: pd.DataFrame, error_term: int = 0.001) -> pd.DataFrame:
     """Calculate selection statistics for products, grouped by query.
 
     Computes selection percentages within each query's product set.
 
     Args:
         df: Input dataframe with 'query', 'title', and 'selected' columns
+        error_term: Constant to use as error term to make sure that percentage sums are sensible
 
     Returns:
         DataFrame with columns: sum, count, percentage, std_error, short_title
         indexed by (query, title)
     """
-    stats = df.groupby(['query', 'title', 'model_name'])['selected'].agg(['sum', 'count'])
-    stats["sum"] = stats["sum"].clip(lower=0)
-    stats['percentage'] = (stats['sum'] / stats['count']) * 100
+    out = (
+        df.groupby(["query", "title", "model_name"])["selected"]
+        .agg(
+            count="sum",
+            total="size",
+            mean="mean",
+            sem="sem",
+        )
+    )
+    out["std_error"] = out["sem"] * 100
+    out["percentage"] = out["mean"] * 100
 
-    n = stats['count']
-    p = stats['sum'] / n
-    stats['std_error'] = np.sqrt(p * (1 - p) / n) * 100
+    out.drop(columns=["mean", "sem"], inplace=True)
 
-    return stats
+    # validate percentage sums
+    grouped_sums = (
+        out.groupby(["query", "model_name"])["percentage"]
+        .agg("sum")
+    )
+    invalid = grouped_sums[(grouped_sums > 100 + error_term) | (grouped_sums < 100 - error_term)]
+    assert len(invalid) == 0
 
-
+    return out
