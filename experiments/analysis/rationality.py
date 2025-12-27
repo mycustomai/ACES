@@ -8,44 +8,43 @@ from experiments.analysis.common import SanityCheckMode
 
 
 def sanity_checks_passed(
-    df: pd.DataFrame,
+    orig_df: pd.DataFrame,
     experiment_labels: Iterable[str],
     models: list[str],
     queries: list[str],
 ) -> pd.DataFrame:
     mask = (
-        df["experiment_label"].isin(experiment_labels)
-        & df["model_name"].isin(models)
-        & df["query"].isin(queries)
+        orig_df["experiment_label"].isin(experiment_labels)
+        & orig_df["model_name"].isin(models)
+        & orig_df["query"].isin(queries)
     )
-    df_filtered = df.loc[mask]
+    df_filtered = orig_df.loc[mask].copy()
+
+    df_filtered["selected"] = df_filtered["selected"].clip(lower=0, upper=1)
 
     def experiment_passed(g: pd.DataFrame) -> pd.Series:
-        selected_sum = g["selected"].sum()
-        has_selection = selected_sum > 0
-        passed = has_selection and (
-            (g["selected"] == g["desired_choice"]).all() or selected_sum == 2
+        passed = (
+            (g["selected"] == g["desired_choice"]).all()
         )
-        return pd.Series({"has_selection": has_selection, "passed": passed})
+        return pd.Series({"passed": passed, "total": len(g)})
 
     exp_results = df_filtered.groupby(
         ["experiment_label", "model_name", "query", "experiment_number"], as_index=False
     ).apply(experiment_passed, include_groups=False)
 
     return exp_results.groupby(["experiment_label", "model_name", "query"]).agg(
-        total_experiments=("has_selection", "count"),
-        experiments_without_error=("has_selection", "sum"),
+        total_experiments=("total", "count"),
         passed_count=("passed", "sum"),
     )
 
 
 def get_mean_and_variance(data: pd.DataFrame) -> pd.DataFrame:
     df = data.copy()
-    df["prop"] = 1 - df["passed_count"] / df["experiments_without_error"]
-    df["var"] = df["prop"] * (1 - df["prop"]) / df["experiments_without_error"]
+    df["prop"] = 1 - df["passed_count"] / df["total_experiments"]
+    df["var"] = df["prop"] * (1 - df["prop"]) / df["total_experiments"]
 
     def compute_pooled_stats(g: pd.DataFrame) -> pd.Series:
-        trials = g["experiments_without_error"].to_numpy()
+        trials = g["total_experiments"].to_numpy()
         props = g["prop"].to_numpy()
         variances = g["var"].to_numpy()
 
@@ -81,6 +80,7 @@ def calculate_sanity_check(
     success_data = sanity_checks_passed(
         df, experiment_labels=selected_experiment_names.keys(), models=models, queries=queries
     )
+
     meta_data = get_mean_and_variance(success_data).reset_index()
 
     meta_data["cell"] = meta_data.apply(
