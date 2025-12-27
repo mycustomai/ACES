@@ -35,6 +35,7 @@ analysis = [
     "patsy>=1.0.2",
     "seaborn>=0.13.2",
     "typer>=0.20.1",
+    "scipy>=1.16.3",
 ]
 dev = [
     "ipykernel>=7.1.0",
