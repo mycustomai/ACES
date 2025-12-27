@@ -73,8 +73,8 @@ def calculate_sanity_check(
     model_display_names: dict[str, str],
 ) -> pd.DataFrame:
     selected_experiment_names = experiment_names[check_name]
-    models = df["model_name"].unique()
-    queries = df["query"].unique()
+    models = df["model_name"].unique().tolist()
+    queries = df["query"].unique().tolist()
 
     success_data = sanity_checks_passed(
         df, experiment_labels=selected_experiment_names.keys(), models=models, queries=queries
