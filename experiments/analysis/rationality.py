@@ -2,6 +2,7 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 import scipy.stats as stats
 
 from experiments.analysis.common import SanityCheckMode
@@ -40,30 +41,28 @@ def sanity_checks_passed(
 
 def get_mean_and_variance(data: pd.DataFrame) -> pd.DataFrame:
     df = data.copy()
-    df["prop"] = 1 - df["passed_count"] / df["total_experiments"]
-    df["var"] = df["prop"] * (1 - df["prop"]) / df["total_experiments"]
 
-    def compute_pooled_stats(g: pd.DataFrame) -> pd.Series:
-        trials = g["total_experiments"].to_numpy()
-        props = g["prop"].to_numpy()
-        variances = g["var"].to_numpy()
+    def compute_group_stats(g: pd.DataFrame) -> pd.Series:
+        total = g["total_experiments"].sum()
+        passed = g["passed_count"].sum()
+        failed = total - passed
 
-        pooled_mu = np.average(props, weights=trials)
-        n = trials.sum()
-        pooled_var = (((trials - 1) * variances) + trials * (props - pooled_mu) ** 2).sum() / (n - 1)
+        mean = failed / total  # proportion failed
 
-        se = np.sqrt(pooled_var / n)
-        ci = stats.norm.interval(0.95, loc=pooled_mu, scale=se)
+        ci = sm.stats.proportion_confint(
+            count=failed, nobs=total, alpha=0.05, method="wilson"
+        )
+        se = np.sqrt(mean * (1 - mean) / total)
 
         return pd.Series({
-            "mean": pooled_mu,
+            "mean": mean,
             "ci_lo": ci[0],
             "ci_hi": ci[1],
-            "std_error": 0.0 if np.isnan(se) else se,
+            "std_error": se,
         })
 
     return df.groupby(["experiment_label", "model_name"]).apply(
-        compute_pooled_stats, include_groups=False
+        compute_group_stats, include_groups=False
     )
 
 
