@@ -38,6 +38,17 @@ This project uses `uv` for dependency management and execution.
   ```bash
   uv sync --all-packages
   ```
+  
+  To use the `analysis` functionality or development-dependencies:
+  ```bash
+  # installs BOTH dev and analysis dependencies
+  uv sync --all-groups --all-packages
+  
+  # installs only dev
+  uv sync --dev --all-packages
+  ```
+  
+  Use the `uv sync --all-groups --all-packages` by default to install _all_ dependencies for various workflows.
 
 - Create an `.env` file with required API keys. Use `.env.sample` as a template:
   ```bash
@@ -143,9 +154,61 @@ uv run run.py --runtime-type batch --force-submit
 ## Output
 
 All experiment results are stored in the `experiment_logs/` directory, organized by dataset and model configuration. Results include:
-- Detailed interaction logs and agent reasoning traces  
+- Detailed interaction logs and agent reasoning traces
 - Final purchase decisions
 - Aggregated results in `aggregated_experiment_data.csv`
+
+## Analysis
+
+The `analysis` CLI processes experiment output data to generate summary statistics and model coefficients.
+
+To use the `analysis` script, the `analysis` dependency group needs to be installed. Be sure to use the `uv sync --all-groups` or `uv sync --group analysis`
+to install the required dependencies.
+
+```
+ Usage: analysis [OPTIONS] COMMAND [ARGS]...
+
+ Analysis CLI for experiment data.
+
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --install-completion          Install completion for the current shell.      │
+│ --show-completion             Show completion for the current shell, to copy │
+│                               it or customize the installation.              │
+│ --help                        Show this message and exit.                    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────╮
+│ market-share        Analyze market share from a CSV file.                    │
+│ choice-model        Generate a choice-model from a CSV file.                 │
+│ rationality-suite   Rationality suite sanity checks                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+### Sub-command to Dataset Mapping
+
+| Analysis Command                | Dataset                       | Subset                              |
+|---------------------------------|-------------------------------|-------------------------------------|
+| `market-share`                  | bb (Choice Behavior & Biases) | `market_share` or `choice_behavior` |
+| `choice-model`                  | bb (Choice Behavior & Biases) | `choice_behavior`                   |
+| `rationality-suite price`       | rs (Rationality Suite)        | `relative_price`                    |
+| `rationality-suite rating`      | rs (Rationality Suite)        | `rating`                            |
+| `rationality-suite instruction` | rs (Rationality Suite)        | `instruction_following`             |
+| `rationality-suite ar_price`    | rs (Rationality Suite)        | `absolute_and_random_price`         |
+
+### Usage Examples
+
+```bash
+# Analyze market share from bb dataset results
+uv run analysis market-share experiment_logs/aggregated_experiment_data.csv
+
+# Generate choice model coefficients
+uv run analysis choice-model experiment_logs/aggregated_experiment_data.csv
+
+# Run rationality suite sanity checks
+uv run analysis rationality-suite price experiment_logs/aggregated_experiment_data.csv
+uv run analysis rationality-suite rating experiment_logs/aggregated_experiment_data.csv
+```
+
+The `artifacts/analysis/` directory is the target output location of result CSV.
 
 ## Repository Layout
 
