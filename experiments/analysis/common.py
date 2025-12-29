@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+from experiments.engine_loader import load_all_model_engine_params
 
 
 class SanityCheckMode(StrEnum):
@@ -24,10 +25,17 @@ def load_query_shortnames() -> dict[str, dict[str, str]]:
 
 
 def load_model_display_names() -> dict[str, str]:
-    """Load model display names from YAML config."""
-    path = REPO_ROOT / "config" / "experiment_metadata" / "model_display_names.yaml"
-    with open(path) as f:
-        return yaml.safe_load(f)
+    """Load model display names from EngineParams YAML config files.
+
+    Returns:
+        Dict[model_name, human-friendly name]
+    """
+    engine_params = load_all_model_engine_params()
+    display_name_mapping = {
+        engine.model: engine.display_name
+        for engine in engine_params
+    }
+    return display_name_mapping
 
 
 def get_rationality_suite_experiment_names() -> dict[str, dict[str, str]]:
