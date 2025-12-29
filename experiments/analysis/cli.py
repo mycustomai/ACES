@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import typer
+from experiments.analysis.choice_model import generate_choice_model_results
 
 from experiments.analysis.common import (
     load_query_shortnames,
@@ -39,6 +40,21 @@ def market_share(csv_file: Path) -> None:
     short_titles = load_query_shortnames()
 
     analyze_market_share(csv_file, short_titles=short_titles, output_filepath=output_filepath)
+
+
+@app.command("choice-model")
+def choice_model(csv_file: Path) -> None:
+    """Generate a choice-model from a CSV file."""
+    target_path = Path("artifacts/analysis")
+    target_path.mkdir(parents=True, exist_ok=True)
+
+    now = datetime.now()
+    filename = f"{now:%Y%m%d%H%M%S}_choice_model.csv"
+    output_filepath = target_path / filename
+
+    #short_titles = load_query_shortnames()
+
+    generate_choice_model_results(csv_file, output_filepath=output_filepath)
 
 
 def _run_sanity_check(csv_file: Path, mode: SanityCheckMode) -> None:
