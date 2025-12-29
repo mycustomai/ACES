@@ -130,6 +130,7 @@ class TestAnthropicBatchProviderMonitorSetup:
         engine_params = EngineParams(
             engine_type=EngineType.ANTHROPIC,
             model="claude-3-5-sonnet-20241022",
+            display_name="Claude 3.5 Sonnet",
             api_key=SecretStr("test-key"),
         )
 
@@ -140,7 +141,9 @@ class TestAnthropicBatchProviderMonitorSetup:
     def test_setup_with_env_api_key(self):
         """Test setup with API key from environment."""
         engine_params = EngineParams(
-            engine_type=EngineType.ANTHROPIC, model="claude-3-5-sonnet-20241022"
+            engine_type=EngineType.ANTHROPIC,
+            model="claude-3-5-sonnet-20241022",
+            display_name="Claude 3.5 Sonnet",
         )
 
         with (
@@ -153,7 +156,9 @@ class TestAnthropicBatchProviderMonitorSetup:
     def test_setup_no_api_key_raises_error(self):
         """Test setup without API key raises error."""
         engine_params = EngineParams(
-            engine_type=EngineType.ANTHROPIC, model="claude-3-5-sonnet-20241022"
+            engine_type=EngineType.ANTHROPIC,
+            model="claude-3-5-sonnet-20241022",
+            display_name="Claude 3.5 Sonnet",
         )
 
         with patch.dict("os.environ", {}, clear=True):
@@ -165,6 +170,7 @@ class TestAnthropicBatchProviderMonitorSetup:
         engine_params = EngineParams(
             engine_type=EngineType.ANTHROPIC,
             model="claude-3-5-sonnet-20241022",
+            display_name="Claude 3.5 Sonnet",
             api_key="test-key",
         )
 
@@ -182,19 +188,10 @@ class TestAnthropicBatchProviderMonitorBatches:
     """Test batch monitoring functionality."""
 
     @pytest.fixture
-    def mock_engine_params(self):
-        """Mock engine parameters."""
-        return EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3-5-sonnet-20241022",
-            api_key="test-key",
-        )
-
-    @pytest.fixture
-    def mock_monitor(self, mock_engine_params):
+    def mock_monitor(self, mock_anthropic_params):
         """Create a mock monitor instance."""
         with patch("anthropic.Anthropic"):
-            monitor = AnthropicBatchProviderMonitor(mock_engine_params)
+            monitor = AnthropicBatchProviderMonitor(mock_anthropic_params)
             monitor.client = Mock()
             return monitor
 
@@ -305,10 +302,10 @@ class TestAnthropicBatchProviderMonitorBatches:
         assert results[2].status == BatchStatus.FAILED
         assert results[2].result is None
 
-    def test_monitor_batches_no_client_raises_error(self, mock_engine_params):
+    def test_monitor_batches_no_client_raises_error(self, mock_anthropic_params):
         """Test monitoring without client raises error."""
         with patch("anthropic.Anthropic"):
-            monitor = AnthropicBatchProviderMonitor(mock_engine_params)
+            monitor = AnthropicBatchProviderMonitor(mock_anthropic_params)
             monitor.client = None
 
             with pytest.raises(ValueError, match="Anthropic client not configured"):
@@ -348,19 +345,10 @@ class TestAnthropicBatchProviderMonitorResultsAccumulation:
     """Test batch result accumulation functionality."""
 
     @pytest.fixture
-    def mock_engine_params(self):
-        """Mock engine parameters."""
-        return EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3-5-sonnet-20241022",
-            api_key="test-key",
-        )
-
-    @pytest.fixture
-    def mock_monitor(self, mock_engine_params):
+    def mock_monitor(self, mock_anthropic_params):
         """Create a mock monitor instance."""
         with patch("anthropic.Anthropic"):
-            monitor = AnthropicBatchProviderMonitor(mock_engine_params)
+            monitor = AnthropicBatchProviderMonitor(mock_anthropic_params)
             monitor.client = Mock()
             return monitor
 
@@ -496,19 +484,10 @@ class TestAnthropicBatchProviderMonitorIntegration:
     """Integration tests for complete monitoring workflow."""
 
     @pytest.fixture
-    def mock_engine_params(self):
-        """Mock engine parameters."""
-        return EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3-5-sonnet-20241022",
-            api_key="test-key",
-        )
-
-    @pytest.fixture
-    def mock_monitor(self, mock_engine_params):
+    def mock_monitor(self, mock_anthropic_params):
         """Create a mock monitor instance."""
         with patch("anthropic.Anthropic"):
-            monitor = AnthropicBatchProviderMonitor(mock_engine_params)
+            monitor = AnthropicBatchProviderMonitor(mock_anthropic_params)
             monitor.client = Mock()
             return monitor
 

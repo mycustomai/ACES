@@ -4,23 +4,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from agent.src.typedefs import EngineParams, EngineType
 from experiments.runners.batch_runtime.providers.gemini.monitor import (
     BatchStatus,
     GeminiProviderBatchMonitor,
     JobState,
 )
-
-
-@pytest.fixture
-def engine_params():
-    return EngineParams(
-        engine_type=EngineType.GEMINI,
-        model="gemini-2.0-flash-001",
-        max_new_tokens=100,
-        temperature=0.7,
-        config_name="gemini-test",
-    )
 
 
 @pytest.fixture
@@ -70,14 +58,14 @@ class TestGeminiProviderBatchMonitor:
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.storage")
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.vertexai")
     def test_setup_success(
-        self, mock_vertexai, mock_storage, mock_genai, engine_params, mock_env
+        self, mock_vertexai, mock_storage, mock_genai, mock_gemini_params, mock_env
     ):
         """Test successful setup with all required configuration."""
         # Mock the client creation
         mock_genai.Client.return_value = MagicMock()
         mock_storage.Client.return_value = MagicMock()
 
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
 
         # Verify clients were initialized
         assert hasattr(monitor, "genai_client")
@@ -116,7 +104,7 @@ class TestGeminiProviderBatchMonitor:
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.storage")
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.vertexai")
     def test_download_batch_results(
-        self, mock_vertexai, mock_storage, mock_genai, engine_params, mock_env
+        self, mock_vertexai, mock_storage, mock_genai, mock_gemini_params, mock_env
     ):
         """Test downloading results from GCS."""
         # Mock clients
@@ -156,7 +144,7 @@ class TestGeminiProviderBatchMonitor:
         mock_bucket = mock_storage_client.bucket.return_value
         mock_bucket.list_blobs.return_value = [mock_blob1]
 
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
         monitor._batch_output_uri_mappings["batch-1"] = (
             "gs://test-bucket/batch_outputs/batch-1/"
         )
@@ -174,14 +162,14 @@ class TestGeminiProviderBatchMonitor:
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.storage")
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.vertexai")
     def test_download_no_output_location(
-        self, mock_vertexai, mock_storage, mock_genai, engine_params, mock_env
+        self, mock_vertexai, mock_storage, mock_genai, mock_gemini_params, mock_env
     ):
         """Test handling when no output location is found."""
         # Mock clients
         mock_genai.Client.return_value = MagicMock()
         mock_storage.Client.return_value = MagicMock()
 
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
 
         # No output mapping for this batch - should raise ValueError
         with pytest.raises(ValueError, match="has no output directory URI"):
@@ -191,10 +179,10 @@ class TestGeminiProviderBatchMonitor:
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.storage")
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.vertexai")
     def test_map_gemini_status(
-        self, mock_vertexai, mock_storage, mock_genai, engine_params, mock_env
+        self, mock_vertexai, mock_storage, mock_genai, mock_gemini_params, mock_env
     ):
         """Test mapping of Gemini JobState to BatchStatus."""
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
 
         assert (
             monitor._map_gemini_status(JobState.JOB_STATE_SUCCEEDED)
@@ -216,7 +204,7 @@ class TestGeminiProviderBatchMonitor:
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.storage")
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.vertexai")
     def test_list_recent_batches(
-        self, mock_vertexai, mock_storage, mock_genai, engine_params, mock_env
+        self, mock_vertexai, mock_storage, mock_genai, mock_gemini_params, mock_env
     ):
         """Test listing recent batches with pagination limit."""
         # Mock clients
@@ -233,7 +221,7 @@ class TestGeminiProviderBatchMonitor:
 
         mock_genai_client.batches.list.return_value = iter(mock_jobs)
 
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
         batch_list = monitor._list_recent_batches()
 
         # Should stop at 200
@@ -243,7 +231,7 @@ class TestGeminiProviderBatchMonitor:
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.storage")
     @patch("experiments.runners.batch_runtime.providers.gemini.monitor.vertexai")
     def test_gcs_uri_parsing(
-        self, mock_vertexai, mock_storage, mock_genai, engine_params, mock_env
+        self, mock_vertexai, mock_storage, mock_genai, mock_gemini_params, mock_env
     ):
         """Test parsing of GCS URIs."""
         # Mock clients
@@ -254,7 +242,7 @@ class TestGeminiProviderBatchMonitor:
         # Mock empty blob list (no results)
         mock_storage_client.bucket.return_value.list_blobs.return_value = []
 
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
 
         # Test invalid URI format - should raise ValueError
         monitor._batch_output_uri_mappings["batch-1"] = "invalid-uri"
@@ -266,9 +254,9 @@ class TestGeminiProviderBatchMonitor:
         with pytest.raises(ValueError, match="No result files found"):
             monitor._download_batch_results("batch-2")
 
-    def test_no_genai_client_error(self, engine_params, mock_env):
+    def test_no_genai_client_error(self, mock_gemini_params, mock_env):
         """Test error when genai client is not configured."""
-        monitor = GeminiProviderBatchMonitor(engine_params)
+        monitor = GeminiProviderBatchMonitor(mock_gemini_params)
 
         # Manually unset the client
         delattr(monitor, "genai_client")

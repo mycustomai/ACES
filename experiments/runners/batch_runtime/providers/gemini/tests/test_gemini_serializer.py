@@ -2,7 +2,6 @@ import pandas as pd
 import pytest
 
 from agent.src.core.tools import AddToCartTool
-from agent.src.typedefs import EngineType, GeminiParams
 from experiments.config import ExperimentData
 from experiments.runners.batch_runtime.providers.gemini.serializer import (
     GeminiBatchProviderSerializer,
@@ -11,17 +10,7 @@ from experiments.runners.batch_runtime.typedefs import BatchRequest, RawMessageE
 
 
 @pytest.fixture
-def engine_params():
-    return GeminiParams(
-        engine_type=EngineType.GEMINI,
-        model="gemini-2.0-flash-001",
-        max_new_tokens=100,
-        temperature=0.7,
-    )
-
-
-@pytest.fixture
-def batch_request(engine_params):
+def batch_request(mock_gemini_params):
     # Create actual ExperimentData objects
     experiment1 = ExperimentData(
         experiment_label="test_exp1",
@@ -60,15 +49,15 @@ def batch_request(engine_params):
     return BatchRequest(
         experiments=[experiment1, experiment2],
         raw_messages=raw_messages,
-        engine_params=engine_params,
+        engine_params=mock_gemini_params,
         tools=[AddToCartTool()],
     )
 
 
 class TestGeminiBatchProviderSerializer:
-    def test_serialize_basic(self, engine_params, batch_request):
+    def test_serialize_basic(self, mock_gemini_params, batch_request):
         """Test basic serialization of batch requests."""
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         assert len(result) == 2
@@ -89,7 +78,7 @@ class TestGeminiBatchProviderSerializer:
             assert "generationConfig" in inner_request
             assert "systemInstruction" in inner_request
 
-    def test_system_message_handling(self, engine_params):
+    def test_system_message_handling(self, mock_gemini_params):
         """Test that system messages are properly extracted to system_instruction."""
         experiment = ExperimentData(
             experiment_label="test_system",
@@ -112,10 +101,10 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
@@ -130,7 +119,7 @@ class TestGeminiBatchProviderSerializer:
         assert request["contents"][0]["role"] == "user"
         assert request["contents"][1]["role"] == "model"  # assistant mapped to model
 
-    def test_multimodal_message_handling(self, engine_params):
+    def test_multimodal_message_handling(self, mock_gemini_params):
         """Test handling of messages with images."""
         experiment = ExperimentData(
             experiment_label="test_multimodal",
@@ -162,10 +151,10 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
@@ -176,7 +165,7 @@ class TestGeminiBatchProviderSerializer:
         assert content_parts[1]["fileData"]["fileUri"] == "gs://bucket/image.png"
         assert content_parts[1]["fileData"]["mimeType"] == "image/png"
 
-    def test_gcs_url_conversion(self, engine_params):
+    def test_gcs_url_conversion(self, mock_gemini_params):
         """Test conversion of different GCS URL formats."""
         experiment = ExperimentData(
             experiment_label="test_gcs",
@@ -212,10 +201,10 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
@@ -225,9 +214,9 @@ class TestGeminiBatchProviderSerializer:
         assert parts[1]["fileData"]["fileUri"] == "gs://mybucket/img1.png"
         assert parts[2]["fileData"]["fileUri"] == "gs://mybucket/img2.png"
 
-    def test_tool_conversion(self, engine_params, batch_request):
+    def test_tool_conversion(self, mock_gemini_params, batch_request):
         """Test conversion of OpenAI tools to Gemini format."""
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
@@ -243,7 +232,7 @@ class TestGeminiBatchProviderSerializer:
         assert "description" in func_decl
         assert "parameters" in func_decl
 
-    def test_generation_config(self, engine_params):
+    def test_generation_config(self, mock_gemini_params):
         """Test generation config is properly set."""
         experiment = ExperimentData(
             experiment_label="test_config",
@@ -256,23 +245,23 @@ class TestGeminiBatchProviderSerializer:
         raw_messages = [RawMessageExchange([{"role": "user", "content": "Hello"}])]
 
         # Test with different engine param configurations
-        engine_params.max_new_tokens = 500
-        engine_params.temperature = 0.9
+        mock_gemini_params.max_new_tokens = 500
+        mock_gemini_params.temperature = 0.9
 
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         gen_config = result[0].provider_request["request"]["generationConfig"]
         assert gen_config["maxOutputTokens"] == 500
         assert gen_config["temperature"] == 0.9
 
-    def test_complex_system_message(self, engine_params):
+    def test_complex_system_message(self, mock_gemini_params):
         """Test handling of complex system messages with multiple parts."""
         experiment = ExperimentData(
             experiment_label="test_complex_system",
@@ -300,10 +289,10 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
@@ -311,7 +300,7 @@ class TestGeminiBatchProviderSerializer:
         expected_system = "You are a helpful assistant.\nAlways be polite."
         assert request["systemInstruction"]["parts"][0]["text"] == expected_system
 
-    def test_non_gcs_images_raise_error(self, engine_params):
+    def test_non_gcs_images_raise_error(self, mock_gemini_params):
         """Test that non-GCS images raise ValueError."""
         experiment = ExperimentData(
             experiment_label="test_error_images",
@@ -341,16 +330,16 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
 
         # Should raise ValueError for non-GCS URLs
         with pytest.raises(ValueError, match="Invalid image URL format"):
             serializer.serialize(batch_request)
 
-    def test_empty_tools(self, engine_params):
+    def test_empty_tools(self, mock_gemini_params):
         """Test serialization without tools."""
         experiment = ExperimentData(
             experiment_label="test_no_tools",
@@ -365,17 +354,17 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
             tools=None,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
         assert "tools" not in request
 
-    def test_edge_case_empty_content(self, engine_params):
+    def test_edge_case_empty_content(self, mock_gemini_params):
         """Test handling of empty content messages."""
         experiment = ExperimentData(
             experiment_label="test_empty",
@@ -390,17 +379,17 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]
         assert len(request["contents"]) == 1
         assert request["contents"][0]["parts"][0]["text"] == ""
 
-    def test_edge_case_unicode_content(self, engine_params):
+    def test_edge_case_unicode_content(self, mock_gemini_params):
         """Test handling of unicode content in messages."""
         experiment = ExperimentData(
             experiment_label="test_unicode",
@@ -418,10 +407,10 @@ class TestGeminiBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=raw_messages,
-            engine_params=engine_params,
+            engine_params=mock_gemini_params,
         )
 
-        serializer = GeminiBatchProviderSerializer(engine_params)
+        serializer = GeminiBatchProviderSerializer(mock_gemini_params)
         result = serializer.serialize(batch_request)
 
         request = result[0].provider_request["request"]

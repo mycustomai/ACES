@@ -1,7 +1,6 @@
 import pytest
 
 from agent.src.core.tools import AddToCartInput
-from agent.src.typedefs import EngineParams, EngineType
 from experiments.runners.batch_runtime.providers.gemini.deserializer import (
     GeminiBatchProviderDeserializer,
 )
@@ -9,14 +8,6 @@ from experiments.runners.batch_runtime.typedefs import (
     ExperimentFailureModes,
     ProviderBatchResult,
 )
-
-
-@pytest.fixture
-def engine_params():
-    return EngineParams(
-        engine_type=EngineType.GEMINI,
-        model="gemini-2.0-flash-001",
-    )
 
 
 @pytest.fixture
@@ -103,9 +94,9 @@ def response_no_candidates():
 
 
 class TestGeminiBatchProviderDeserializer:
-    def test_deserialize_successful_response(self, engine_params, successful_response):
+    def test_deserialize_successful_response(self, mock_gemini_params, successful_response):
         """Test deserializing a successful response with tool call."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(successful_response))
 
         assert len(result.data) == 1
@@ -123,9 +114,9 @@ class TestGeminiBatchProviderDeserializer:
         assert experiment_result.tool_call.number_of_reviews == 1234
         assert experiment_result.failure_reason is None
 
-    def test_deserialize_no_tool_call(self, engine_params, response_without_tool_call):
+    def test_deserialize_no_tool_call(self, mock_gemini_params, response_without_tool_call):
         """Test deserializing a response without tool call."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(
             ProviderBatchResult(response_without_tool_call)
         )
@@ -141,9 +132,9 @@ class TestGeminiBatchProviderDeserializer:
         assert experiment_result.tool_call is None
         assert experiment_result.failure_reason == ExperimentFailureModes.NO_TOOL_CALL
 
-    def test_deserialize_error_response(self, engine_params, error_response):
+    def test_deserialize_error_response(self, mock_gemini_params, error_response):
         """Test deserializing an error response."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(error_response))
 
         assert len(result.data) == 1
@@ -157,9 +148,9 @@ class TestGeminiBatchProviderDeserializer:
         assert experiment_result.tool_call is None
         assert experiment_result.failure_reason == ExperimentFailureModes.API_ERROR
 
-    def test_deserialize_no_candidates(self, engine_params, response_no_candidates):
+    def test_deserialize_no_candidates(self, mock_gemini_params, response_no_candidates):
         """Test deserializing a response with no candidates."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(response_no_candidates))
 
         assert len(result.data) == 1
@@ -170,9 +161,9 @@ class TestGeminiBatchProviderDeserializer:
         assert experiment_result.tool_call is None
         assert experiment_result.failure_reason == ExperimentFailureModes.API_ERROR
 
-    def test_extract_text_content_multiple_parts(self, engine_params):
+    def test_extract_text_content_multiple_parts(self, mock_gemini_params):
         """Test extracting text content from multiple text parts."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         parts = [
             {"text": "Part 1."},
@@ -184,9 +175,9 @@ class TestGeminiBatchProviderDeserializer:
         text = deserializer._extract_text_content(parts)
         assert text == "Part 1. Part 2. Part 3."
 
-    def test_extract_text_content_no_text(self, engine_params):
+    def test_extract_text_content_no_text(self, mock_gemini_params):
         """Test extracting text when no text parts exist."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         parts = [
             {"functionCall": {"name": "some_function", "args": {}}},
@@ -195,9 +186,9 @@ class TestGeminiBatchProviderDeserializer:
         text = deserializer._extract_text_content(parts)
         assert text == ""
 
-    def test_extract_tool_call_valid(self, engine_params):
+    def test_extract_tool_call_valid(self, mock_gemini_params):
         """Test extracting a valid tool call."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         parts = [
             {"text": "Here's a product:"},
@@ -222,9 +213,9 @@ class TestGeminiBatchProviderDeserializer:
         assert tool_call.rating == 4.0
         assert tool_call.number_of_reviews == 100
 
-    def test_extract_tool_call_invalid_args(self, engine_params):
+    def test_extract_tool_call_invalid_args(self, mock_gemini_params):
         """Test extracting tool call with invalid arguments."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         parts = [
             {
@@ -242,9 +233,9 @@ class TestGeminiBatchProviderDeserializer:
         tool_call = deserializer._extract_tool_call(parts)
         assert tool_call is None  # Should return None on parse error
 
-    def test_extract_tool_call_wrong_function(self, engine_params):
+    def test_extract_tool_call_wrong_function(self, mock_gemini_params):
         """Test extracting tool call with wrong function name."""
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         parts = [
             {
@@ -258,7 +249,7 @@ class TestGeminiBatchProviderDeserializer:
         tool_call = deserializer._extract_tool_call(parts)
         assert tool_call is None
 
-    def test_missing_custom_id(self, engine_params):
+    def test_missing_custom_id(self, mock_gemini_params):
         """Test handling missing custom_id."""
         response = {
             "results": [
@@ -271,25 +262,25 @@ class TestGeminiBatchProviderDeserializer:
             ]
         }
 
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         with pytest.raises(ValueError) as exc_info:
             deserializer.deserialize(ProviderBatchResult(response))
 
         assert "No custom_id found" in str(exc_info.value)
 
-    def test_missing_results_key(self, engine_params):
+    def test_missing_results_key(self, mock_gemini_params):
         """Test handling missing results key."""
         response = {"data": []}  # Wrong key
 
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
 
         with pytest.raises(ValueError) as exc_info:
             deserializer.deserialize(ProviderBatchResult(response))
 
         assert "No results found" in str(exc_info.value)
 
-    def test_multiple_results(self, engine_params):
+    def test_multiple_results(self, mock_gemini_params):
         """Test deserializing multiple results in one batch."""
         response = {
             "results": [
@@ -331,7 +322,7 @@ class TestGeminiBatchProviderDeserializer:
             ]
         }
 
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(response))
 
         assert len(result.data) == 3
@@ -354,7 +345,7 @@ class TestGeminiBatchProviderDeserializer:
         assert result.data[2].tool_call is None
         assert result.data[2].failure_reason == ExperimentFailureModes.API_ERROR
 
-    def test_response_fallback_format(self, engine_params):
+    def test_response_fallback_format(self, mock_gemini_params):
         """Test handling response in fallback format (no 'response' key)."""
         response = {
             "results": [
@@ -368,13 +359,13 @@ class TestGeminiBatchProviderDeserializer:
             ]
         }
 
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(response))
 
         assert len(result.data) == 1
         assert result.data[0].response_content == "Direct response format"
 
-    def test_edge_case_malformed_function_call(self, engine_params):
+    def test_edge_case_malformed_function_call(self, mock_gemini_params):
         """Test handling of malformed function call responses."""
         response = {
             "results": [
@@ -403,14 +394,14 @@ class TestGeminiBatchProviderDeserializer:
             ]
         }
 
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(response))
 
         assert len(result.data) == 1
         assert result.data[0].tool_call is None
         assert result.data[0].failure_reason == ExperimentFailureModes.NO_TOOL_CALL
 
-    def test_edge_case_unicode_response(self, engine_params):
+    def test_edge_case_unicode_response(self, mock_gemini_params):
         """Test handling of unicode content in responses."""
         response = {
             "results": [
@@ -433,7 +424,7 @@ class TestGeminiBatchProviderDeserializer:
             ]
         }
 
-        deserializer = GeminiBatchProviderDeserializer(engine_params)
+        deserializer = GeminiBatchProviderDeserializer(mock_gemini_params)
         result = deserializer.deserialize(ProviderBatchResult(response))
 
         assert len(result.data) == 1
