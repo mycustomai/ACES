@@ -1,4 +1,5 @@
 engine_type: gemini
 model: gemini-3-flash-preview
+display_name: Gemini 3 Flash Preview
 temperature: 1.0
 thinking_level: low

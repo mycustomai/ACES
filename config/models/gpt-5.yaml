@@ -1,4 +1,5 @@
 engine_type: openai
 model: gpt-5
+display_name: GPT-5
 temperature: 1.0
 reasoning_effort: minimal

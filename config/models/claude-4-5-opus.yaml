@@ -1,5 +1,6 @@
 engine_type: anthropic
 model: claude-opus-4-5-20251101
+display_name: Claude Opus 4.5
 temperature: 1.0
 thinking:
   type: enabled  # change to "enabled" and set a budget_tokens value to enable thinking
