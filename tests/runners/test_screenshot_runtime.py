@@ -12,29 +12,6 @@ from experiments.runners.screenshot_runtime import ScreenshotRuntime
 
 
 @pytest.fixture
-def mock_engine_params() -> list[EngineParams]:
-    """Provide a couple of engine configurations for tests."""
-    return [
-        EngineParams(
-            engine_type=EngineType.OPENAI,
-            model="gpt-4-vision-preview",
-            config_name="openai",
-            api_key="key-openai",
-            temperature=0.1,
-            max_new_tokens=1000,
-        ),
-        EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3-sonnet-20240229",
-            config_name="anthropic",
-            api_key="key-anthropic",
-            temperature=0.1,
-            max_new_tokens=1000,
-        ),
-    ]
-
-
-@pytest.fixture
 def sample_experiment() -> ExperimentData:
     """Return a representative experiment row."""
     experiment_df = Mock()
