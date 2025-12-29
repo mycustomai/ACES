@@ -38,6 +38,7 @@ class TestEngineLoader:
         yaml_content = """
 engine_type: openai
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 """
         temp_file = self.create_temp_yaml_file(yaml_content)
@@ -54,6 +55,7 @@ temperature: 0.5
         yaml_content = """
 engine_type: openai
 model: gpt-4
+display_name: GPT 4
 temperature: 0.7
 max_new_tokens: 1000
 top_p: 0.9
@@ -83,6 +85,7 @@ stop: ["END", "STOP"]
         yaml_content = """
 engine_type: anthropic
 model: claude-sonnet-4-20250514
+display_name: Claude Sonnet 4
 temperature: 1.0
 thinking: true
 top_p: 0.8
@@ -108,6 +111,7 @@ top_k: 50
         yaml_content = """
 engine_type: gemini
 model: gemini-2.5-flash-preview-05-20
+display_name: Gemini 2.5 Flash Preview
 temperature: 1.0
 base_url: https://generativelanguage.googleapis.com/v1beta/
 thinking_budget: 1000
@@ -138,6 +142,7 @@ safety_settings:
         yaml_content = """
 engine_type: huggingface
 model: tgi
+display_name: HuggingFace TGI
 endpoint_url: https://api-inference.huggingface.co/models/meta-llama/Llama-2-7b-chat-hf
 temperature: 0.8
 use_cache: false
@@ -162,6 +167,7 @@ wait_for_model: true
         """Test error handling when engine_type is missing."""
         yaml_content = """
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 """
         temp_file = self.create_temp_yaml_file(yaml_content)
@@ -176,6 +182,7 @@ temperature: 0.5
         yaml_content = """
 engine_type: invalid_engine
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 """
         temp_file = self.create_temp_yaml_file(yaml_content)
@@ -191,6 +198,7 @@ temperature: 0.5
         yaml_content = """
 engine_type: openai
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 frequency_penalty: 5.0
 """
@@ -205,6 +213,7 @@ frequency_penalty: 5.0
         yaml_content = """
 engine_type: gemini
 model: gemini-pro
+display_name: Gemini Pro
 temperature: 0.5
 thinking_budget: -100
 """
@@ -223,21 +232,25 @@ thinking_budget: -100
                 ("openai_gpt4.yaml", """
 engine_type: openai
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 """),
                 ("anthropic_claude.yaml", """
 engine_type: anthropic
 model: claude-3-sonnet
+display_name: Claude 3 Sonnet
 temperature: 0.7
 """),
                 ("_disabled_config.yaml", """
 engine_type: openai
 model: gpt-3.5-turbo
+display_name: GPT 3.5 Turbo
 temperature: 0.3
 """),  # Should be skipped (starts with _)
                 ("gemini_flash.yaml", """
 engine_type: gemini
 model: gemini-1.5-flash
+display_name: Gemini 1.5 Flash
 temperature: 1.0
 """)
             ]
@@ -265,11 +278,13 @@ temperature: 1.0
                 ("openai_gpt4.yaml", """
 engine_type: openai
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 """),
                 ("anthropic_claude.yaml", """
 engine_type: anthropic
 model: claude-3-sonnet
+display_name: Claude 3 Sonnet
 temperature: 0.7
 """)
             ]
@@ -292,11 +307,13 @@ temperature: 0.7
                 ("openai_gpt4.yaml", """
 engine_type: openai
 model: gpt-4
+display_name: GPT 4
 temperature: 0.5
 """),
                 ("anthropic_claude.yaml", """
 engine_type: anthropic
 model: claude-3-sonnet
+display_name: Claude 3 Sonnet
 temperature: 0.7
 """)
             ]
