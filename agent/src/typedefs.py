@@ -50,6 +50,7 @@ class EngineParams(BaseModel):
     
     engine_type: EngineType = Field(..., description="Type of LLM engine to use")
     model: str = Field(..., description="Model name/identifier")
+    display_name: str = Field(..., description="Name to use in user-facing outputs (eg: analysis)")
     api_key: Optional[SecretStr] = Field(None, description="API key for the service")
     temperature: float = Field(0.0, ge=0.0, le=2.0, description="Sampling temperature")
     max_new_tokens: Optional[int] = Field(None, gt=0, description="Maximum tokens to generate")
