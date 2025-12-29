@@ -21,31 +21,6 @@ def temp_dir():
 
 
 @pytest.fixture
-def mock_engine_params():
-    """Create mock EngineParams for testing."""
-    return [
-        EngineParams(
-            engine_type=EngineType.OPENAI,
-            model="gpt-4",
-            api_key=SecretStr("test-openai-key"),
-            temperature=0.7,
-        ),
-        EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3",
-            api_key=SecretStr("test-anthropic-key"),
-            temperature=0.5,
-        ),
-        EngineParams(
-            engine_type=EngineType.GEMINI,
-            model="gemini-pro",
-            api_key=SecretStr("test-gemini-key"),
-            temperature=0.3,
-        ),
-    ]
-
-
-@pytest.fixture
 def sample_records(mock_engine_params):
     """Create sample ExperimentSubmissionRecord objects for testing."""
     # Use the actual config names from mock_engine_params to ensure consistency
