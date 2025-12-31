@@ -356,9 +356,10 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                     result.experiment_id for result in _deserialized_results.data
                 ]
 
-                assert len(result_experiment_ids) == len(experiment_ids), (
-                    f"Not all ids processed. Expected {len(experiment_ids)}, got {len(result_experiment_ids)}"
-                )
+                if not len(result_experiment_ids) == len(experiment_ids):
+                    _print(
+                        f"Not all ids processed. Expected {len(experiment_ids)}, got {len(result_experiment_ids)}"
+                    )
 
                 # process successful results
                 if progress_callback:
