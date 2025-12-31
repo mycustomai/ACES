@@ -16,7 +16,6 @@ from anthropic.types.beta_error_response import BetaErrorResponse
 from pydantic import ValidationError
 
 from agent.src.core.tools import AddToCartInput, ValidTools
-from agent.src.typedefs import EngineParams, EngineType
 from experiments.config import ExperimentId
 from experiments.runners.batch_runtime.providers.anthropic.deserializer import \
     AnthropicBatchProviderDeserializer
@@ -25,36 +24,32 @@ from experiments.runners.batch_runtime.typedefs import (BatchResult,
                                                         ProviderBatchResult)
 
 
+@pytest.fixture
+def anthropic_deserializer(mock_anthropic_params):
+    """Create deserializer using shared mock_anthropic_params fixture."""
+    return AnthropicBatchProviderDeserializer(mock_anthropic_params)
+
+
 class TestAnthropicBatchProviderDeserializer:
     """Comprehensive tests for Anthropic batch provider deserializer"""
 
-    def setup_method(self):
-        """Set up deserializer for each test"""
-        engine_params = EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3-5-sonnet-20241022",
-            temperature=0.0,
-            max_new_tokens=1000,
-        )
-        self.deserializer = AnthropicBatchProviderDeserializer(engine_params)
-
-    def test_deserialize_empty_results(self):
+    def test_deserialize_empty_results(self, anthropic_deserializer):
         """Test deserializing empty results"""
         provider_data = ProviderBatchResult({"results": []})
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 0
 
-    def test_deserialize_missing_results_key(self):
+    def test_deserialize_missing_results_key(self, anthropic_deserializer):
         """Test deserializing without results key"""
         provider_data = ProviderBatchResult({"other_key": "value"})
 
         with pytest.raises(ValueError, match="No results found in the batch response"):
-            self.deserializer.deserialize(provider_data)
+            anthropic_deserializer.deserialize(provider_data)
 
-    def test_deserialize_successful_result_with_tool_call(self):
+    def test_deserialize_successful_result_with_tool_call(self, anthropic_deserializer):
         """Test deserializing a successful result with tool call"""
         text_block = BetaTextBlock(type="text", text="I'll add this product to cart.")
         tool_block = BetaToolUseBlock(
@@ -92,7 +87,7 @@ class TestAnthropicBatchProviderDeserializer:
             {"results": [individual_response.model_dump()]}
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 1
@@ -108,7 +103,7 @@ class TestAnthropicBatchProviderDeserializer:
         assert experiment_result.failure_reason is None
         assert experiment_result.success is True
 
-    def test_deserialize_successful_result_without_tool_call(self):
+    def test_deserialize_successful_result_without_tool_call(self, anthropic_deserializer):
         """Test deserializing a successful result without tool call"""
         text_block = BetaTextBlock(
             type="text", text="I cannot find a suitable product."
@@ -137,7 +132,7 @@ class TestAnthropicBatchProviderDeserializer:
             {"results": [individual_response.model_dump()]}
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 1
@@ -149,7 +144,7 @@ class TestAnthropicBatchProviderDeserializer:
         assert experiment_result.failure_reason == ExperimentFailureModes.NO_TOOL_CALL
         assert experiment_result.success is False
 
-    def test_deserialize_error_result(self):
+    def test_deserialize_error_result(self, anthropic_deserializer):
         """Test deserializing an error result"""
         from anthropic.types.beta_error_response import BetaErrorResponse
         from anthropic.types.beta_invalid_request_error import \
@@ -173,7 +168,7 @@ class TestAnthropicBatchProviderDeserializer:
             {"results": [individual_response.model_dump()]}
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 1
@@ -185,7 +180,7 @@ class TestAnthropicBatchProviderDeserializer:
         assert experiment_result.failure_reason == ExperimentFailureModes.API_ERROR
         assert experiment_result.success is False
 
-    def test_deserialize_canceled_result(self):
+    def test_deserialize_canceled_result(self, anthropic_deserializer):
         """Test deserializing a canceled result"""
         canceled_result = BetaMessageBatchCanceledResult(type="canceled")
 
@@ -197,7 +192,7 @@ class TestAnthropicBatchProviderDeserializer:
             {"results": [individual_response.model_dump()]}
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 1
@@ -209,7 +204,7 @@ class TestAnthropicBatchProviderDeserializer:
         assert experiment_result.failure_reason == ExperimentFailureModes.API_ERROR
         assert experiment_result.success is False
 
-    def test_deserialize_expired_result(self):
+    def test_deserialize_expired_result(self, anthropic_deserializer):
         """Test deserializing an expired result"""
         expired_result = BetaMessageBatchExpiredResult(type="expired")
 
@@ -221,7 +216,7 @@ class TestAnthropicBatchProviderDeserializer:
             {"results": [individual_response.model_dump()]}
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 1
@@ -233,7 +228,7 @@ class TestAnthropicBatchProviderDeserializer:
         assert experiment_result.failure_reason == ExperimentFailureModes.API_ERROR
         assert experiment_result.success is False
 
-    def test_deserialize_multiple_results(self):
+    def test_deserialize_multiple_results(self, anthropic_deserializer):
         """Test deserializing multiple results"""
         # Success result
         text_block1 = BetaTextBlock(type="text", text="Added to cart.")
@@ -295,7 +290,7 @@ class TestAnthropicBatchProviderDeserializer:
             }
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = anthropic_deserializer.deserialize(provider_data)
 
         assert isinstance(result, BatchResult)
         assert len(result.data) == 2
@@ -312,7 +307,7 @@ class TestAnthropicBatchProviderDeserializer:
         assert error_exp.success is False
         assert error_exp.failure_reason == ExperimentFailureModes.API_ERROR
 
-    def test_deserialize_unknown_result_type(self):
+    def test_deserialize_unknown_result_type(self, anthropic_deserializer):
         """Test deserializing with unknown result type"""
         # Create invalid result data that will fail validation
         invalid_result_data = {
@@ -323,7 +318,7 @@ class TestAnthropicBatchProviderDeserializer:
         provider_data = ProviderBatchResult({"results": [invalid_result_data]})
 
         with pytest.raises((ValueError, ValidationError)):
-            self.deserializer.deserialize(provider_data)
+            anthropic_deserializer.deserialize(provider_data)
 
 
 class TestAnthropicDeserializerTextExtraction:

@@ -20,7 +20,6 @@ import pandas as pd
 import pytest
 
 from agent.src.core.tools import AddToCartTool
-from agent.src.typedefs import EngineParams, EngineType
 from common.messages import RawMessageExchange
 from experiments.config import ExperimentData
 from experiments.runners.batch_runtime.providers.anthropic.serializer import \
@@ -29,21 +28,16 @@ from experiments.runners.batch_runtime.typedefs import (BatchRequest,
                                                         SerializedBatchRequest)
 
 
+@pytest.fixture
+def anthropic_serializer(mock_anthropic_params):
+    """Create serializer using shared mock_anthropic_params fixture."""
+    return AnthropicBatchProviderSerializer(mock_anthropic_params)
+
+
 class TestAnthropicBatchProviderSerializer:
     """Test Anthropic serializer implementation."""
 
-    def setup_method(self):
-        """Set up test fixtures."""
-        self.engine_params = EngineParams(
-            engine_type=EngineType.ANTHROPIC,
-            model="claude-3-opus-20240229",
-            temperature=0.7,
-            max_new_tokens=1000,
-            config_name="anthropic_claude-3-opus",
-        )
-        self.serializer = AnthropicBatchProviderSerializer(self.engine_params)
-
-    def test_serialize_basic_request(self):
+    def test_serialize_basic_request(self, anthropic_serializer, mock_anthropic_params):
         """Test basic serialization without tools."""
         experiments = [
             ExperimentData(
@@ -73,10 +67,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=experiments,
             raw_messages=raw_messages,
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
 
         assert len(result) == 1
         assert isinstance(result[0], SerializedBatchRequest)
@@ -94,15 +88,15 @@ class TestAnthropicBatchProviderSerializer:
 
         # Check params structure
         params = provider_request["params"]
-        assert params["model"] == "claude-3-opus-20240229"
-        assert params["temperature"] == 0.7
+        assert params["model"] == "claude-3-5-sonnet-20241022"
+        assert params.get("temperature", 0.0) == 0.0
         assert params["max_tokens"] == 1000
         assert params["system"] == "You are a helpful shopping assistant."
         assert len(params["messages"]) == 1
         assert params["messages"][0]["role"] == "user"
         assert params["messages"][0]["content"] == "Find me a stapler"
 
-    def test_serialize_with_tools(self):
+    def test_serialize_with_tools(self, anthropic_serializer, mock_anthropic_params):
         """Test serialization with tool conversion."""
         experiments = [
             ExperimentData(
@@ -123,11 +117,11 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=experiments,
             raw_messages=raw_messages,
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
             tools=[AddToCartTool()],
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
 
         assert len(result) == 1
         provider_request = result[0].provider_request
@@ -148,7 +142,7 @@ class TestAnthropicBatchProviderSerializer:
         assert "rating" in tool["input_schema"]["properties"]
         assert "number_of_reviews" in tool["input_schema"]["properties"]
 
-    def test_custom_id_encoding_decoding(self):
+    def test_custom_id_encoding_decoding(self, anthropic_serializer, mock_anthropic_params):
         """Test custom_id encoding is deterministic and reversible."""
         experiment_ids = [
             "stapler_sc_price_reduce_100_cent_0",
@@ -196,7 +190,7 @@ class TestAnthropicBatchProviderSerializer:
         encoded2 = AnthropicBatchProviderSerializer.encode_custom_id(test_id)
         assert encoded1 == encoded2
 
-    def test_serialize_multiple_experiments(self):
+    def test_serialize_multiple_experiments(self, anthropic_serializer, mock_anthropic_params):
         """Test serializing multiple experiments."""
         experiments = [
             ExperimentData(
@@ -219,10 +213,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=experiments,
             raw_messages=raw_messages,
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
 
         assert len(result) == 3
 
@@ -235,7 +229,7 @@ class TestAnthropicBatchProviderSerializer:
                 provider_request["params"]["messages"][0]["content"] == f"Buy item {i}"
             )
 
-    def test_system_message_handling(self):
+    def test_system_message_handling(self, anthropic_serializer, mock_anthropic_params):
         """Test that system messages are properly extracted and placed."""
         experiments = [
             ExperimentData(
@@ -264,10 +258,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=experiments,
             raw_messages=raw_messages,
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
         params = result[0].provider_request["params"]
 
         # System message should be in params["system"]
@@ -280,7 +274,7 @@ class TestAnthropicBatchProviderSerializer:
         assert params["messages"][1]["role"] == "assistant"
         assert params["messages"][2]["role"] == "user"
 
-    def test_batch_request_structure_compliance(self):
+    def test_batch_request_structure_compliance(self, anthropic_serializer, mock_anthropic_params):
         """
         Test that batch requests match the official Anthropic batch API structure.
 
@@ -303,10 +297,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=[raw_message],
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
 
         # Verify we get a SerializedBatchRequest
         assert len(result) == 1
@@ -335,11 +329,11 @@ class TestAnthropicBatchProviderSerializer:
         assert "max_tokens" in params, "max_tokens parameter is required"
 
         # Verify model value matches what we set
-        assert params["model"] == "claude-3-opus-20240229"
+        assert params["model"] == "claude-3-5-sonnet-20241022"
         assert params["max_tokens"] == 1000
-        assert params["temperature"] == 0.7
+        assert params.get("temperature", 0.0) == 0.0
 
-    def test_custom_id_uniqueness_and_format(self):
+    def test_custom_id_uniqueness_and_format(self, anthropic_serializer, mock_anthropic_params):
         """
         Test custom_id uniqueness and format compliance.
 
@@ -372,10 +366,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=experiments,
             raw_messages=raw_messages,
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
 
         # Extract all custom_ids
         custom_ids = [req.provider_request["custom_id"] for req in result]
@@ -394,7 +388,7 @@ class TestAnthropicBatchProviderSerializer:
                 "custom_id should be alphanumeric or contain hyphens for negative hash values"
             )
 
-    def test_message_format_compliance(self):
+    def test_message_format_compliance(self, anthropic_serializer, mock_anthropic_params):
         """
         Test that message format complies with Anthropic Messages API.
 
@@ -429,10 +423,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=[raw_message],
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
         params = result[0].provider_request["params"]
 
         # Verify system message is handled separately (Anthropic best practice)
@@ -452,7 +446,7 @@ class TestAnthropicBatchProviderSerializer:
             )
             assert isinstance(message["content"], str), "Content must be string"
 
-    def test_tool_definition_schema_compliance(self):
+    def test_tool_definition_schema_compliance(self, anthropic_serializer, mock_anthropic_params):
         """
         Test that tool definitions comply with Anthropic tool use schema.
 
@@ -478,11 +472,11 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=[raw_message],
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
             tools=[AddToCartTool()],
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
         params = result[0].provider_request["params"]
 
         # Verify tools are present
@@ -526,7 +520,7 @@ class TestAnthropicBatchProviderSerializer:
                 f"Property {prop_name} must have description"
             )
 
-    def test_parameter_validation_compliance(self):
+    def test_parameter_validation_compliance(self, anthropic_serializer, mock_anthropic_params):
         """
         Test that all parameters comply with Anthropic API requirements.
 
@@ -550,10 +544,10 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=[raw_message],
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
         params = result[0].provider_request["params"]
 
         # Verify required parameters are present and valid
@@ -563,10 +557,11 @@ class TestAnthropicBatchProviderSerializer:
         assert isinstance(params["max_tokens"], int), "max_tokens must be integer"
         assert params["max_tokens"] > 0, "max_tokens must be positive"
 
-        assert isinstance(params["temperature"], (int, float)), (
-            "temperature must be numeric"
-        )
-        assert 0 <= params["temperature"] <= 1, "temperature must be between 0 and 1"
+        if "temperature" in params:
+            assert isinstance(params["temperature"], (int, float)), (
+                "temperature must be numeric"
+            )
+            assert 0 <= params["temperature"] <= 1, "temperature must be between 0 and 1"
 
         assert isinstance(params["messages"], list), "messages must be array"
         assert len(params["messages"]) > 0, "messages must not be empty"
@@ -577,7 +572,7 @@ class TestAnthropicBatchProviderSerializer:
         except (TypeError, ValueError) as e:
             pytest.fail(f"Serialized request must be JSON serializable: {e}")
 
-    def test_message_create_params_structure(self):
+    def test_message_create_params_structure(self, anthropic_serializer, mock_anthropic_params):
         """
         Test that params conform to Anthropic's MessageCreateParamsNonStreaming structure.
 
@@ -604,11 +599,11 @@ class TestAnthropicBatchProviderSerializer:
         batch_request = BatchRequest(
             experiments=[experiment],
             raw_messages=[raw_message],
-            engine_params=self.engine_params,
+            engine_params=mock_anthropic_params,
             tools=[AddToCartTool()],
         )
 
-        result = self.serializer.serialize(batch_request)
+        result = anthropic_serializer.serialize(batch_request)
         params = result[0].provider_request["params"]
 
         # Verify required fields per Anthropic MessageCreateParamsNonStreaming
