@@ -91,6 +91,8 @@ def parse_args():
     parser.add_argument('--exclude', nargs='+', help='Exclude specified model config (by filename without extension)')
     parser.add_argument('--force-submit', action='store_true', default=False,
                         help='Force resubmission of batches, overriding submitted experiments tracking (batch runtime only)')
+    parser.add_argument('--monitor-only', action='store_true', default=False,
+                        help='Monitor existing batches without submitting new ones (batch runtime only)')
     parser.add_argument('--experiment-count-limit', type=int, default=None,
                         help='Maximum number of experiments to run (for debugging)')
     return parser.parse_args()
@@ -147,6 +149,7 @@ async def main():
                 experiment_count_limit=args.experiment_count_limit,
                 debug_mode=args.debug,
                 force_submit=args.force_submit,
+                monitor_only=args.monitor_only,
             )
             runtime.run()
         case _:
