@@ -194,7 +194,7 @@ class ExperimentTracker:
                 associated_experiments.append(submission_record.model_copy())
 
         if not associated_experiments:
-            raise ValueError(
+            print(
                 f"No in-progress experiments found with batch_id: {batch_id}"
             )
 
