@@ -333,52 +333,58 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         # Print pre-submission summary
         self._print_submission_summary(outstanding_experiments, resubmit_failed_ids)
 
-        # Check if there's anything to submit
-        if not any(outstanding_experiments.values()):
+        # Check what needs to be done
+        has_outstanding = any(outstanding_experiments.values())
+        has_in_progress = self.experiment_tracker.has_batches_in_progress
+
+        if not has_outstanding and not has_in_progress:
             _print("[green]No experiments to submit. All complete!")
             return
 
-        # Pause before submission
-        self._pause_before_submission(seconds=10)
+        if not has_outstanding:
+            _print("[dim]No new experiments to submit. Monitoring existing batches...")
+        else:
+            # Pause before submission
+            self._pause_before_submission(seconds=10)
 
-        # prepare submissions
-        batch_requests: dict[EngineConfigName, BatchRequest] = {}
-        for engine_params in self.engine_params_list:
-            experiments = copy(outstanding_experiments[engine_params.config_name])
-            if not experiments:
-                _print(f"[dim]No experiments for [blue]{engine_params.config_name}")
-                continue
-            raw_messages = [
-                self.simulator.create_experiment_request(experiment, engine_params)
-                for experiment in experiments
-            ]
-            request = BatchRequest(
-                experiments=experiments,
-                raw_messages=raw_messages,
-                engine_params=engine_params,
-                tools=[AddToCartTool()],
-            )
-            batch_requests[engine_params.config_name] = request
+            # prepare submissions
+            batch_requests: dict[EngineConfigName, BatchRequest] = {}
+            for engine_params in self.engine_params_list:
+                experiments = copy(outstanding_experiments[engine_params.config_name])
+                if not experiments:
+                    _print(f"[dim]No experiments for [blue]{engine_params.config_name}")
+                    continue
+                raw_messages = [
+                    self.simulator.create_experiment_request(experiment, engine_params)
+                    for experiment in experiments
+                ]
+                request = BatchRequest(
+                    experiments=experiments,
+                    raw_messages=raw_messages,
+                    engine_params=engine_params,
+                    tools=[AddToCartTool()],
+                )
+                batch_requests[engine_params.config_name] = request
 
-        # note: serialization performs chunking of `BatchRequest`
-        provider_batch_requests: dict[
-            EngineConfigName, list[SerializedBatchRequest]
-        ] = {}
-        for config_name, request in batch_requests.items():
-            serialized = self.provider_serializers[config_name].serialize(request)
-            provider_batch_requests[config_name] = serialized
+            # note: serialization performs chunking of `BatchRequest`
+            provider_batch_requests: dict[
+                EngineConfigName, list[SerializedBatchRequest]
+            ] = {}
+            for config_name, request in batch_requests.items():
+                serialized = self.provider_serializers[config_name].serialize(request)
+                provider_batch_requests[config_name] = serialized
 
-        if self.debug_mode:
-            self._save_serialized_batch_requests(provider_batch_requests)
+            if self.debug_mode:
+                self._save_serialized_batch_requests(provider_batch_requests)
 
-        # submit
-        submission_records: dict[
-            EngineConfigName, list[ExperimentSubmissionRecord]
-        ] = {}
-        for config_name, request in provider_batch_requests.items():
-            records = self.provider_submitters[config_name].submit(request)
-            submission_records[config_name] = records
-        self.experiment_tracker.set_experiments_in_progress(submission_records)
+            # submit
+            submission_records: dict[
+                EngineConfigName, list[ExperimentSubmissionRecord]
+            ] = {}
+            for config_name, request in provider_batch_requests.items():
+                records = self.provider_submitters[config_name].submit(request)
+                submission_records[config_name] = records
+            self.experiment_tracker.set_experiments_in_progress(submission_records)
 
         self._monitor_batches()
 
