@@ -319,6 +319,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             )
 
     def run(self):
+        # TODO: simplify logic
         if self.monitor_only:
             _print("[bold blue]Monitor-only mode: skipping batch submission")
             self.experiment_tracker.load_submitted_experiments()
