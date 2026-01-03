@@ -138,13 +138,26 @@ class ExperimentLoader(EncodedExperimentIdMixin):
         return iter(self.experiments)
 
     def load_outstanding_experiments(
-        self, submitted_experiments: dict[EngineConfigName, list[ExperimentId]]
+        self,
+        submitted_experiments: dict[EngineConfigName, list[ExperimentId]],
+        resubmit_failed_ids: dict[EngineConfigName, set[ExperimentId]] | None = None,
     ) -> dict[EngineConfigName, list[ExperimentData]]:
-        """Load experiments that have not yet been submitted."""
+        """Load experiments that have not yet been submitted.
+
+        Args:
+            submitted_experiments: Dict of config names to submitted experiment IDs
+            resubmit_failed_ids: Optional dict of config names to failed experiment IDs
+                                 that should be resubmitted
+        """
         outstanding_experiments: dict[EngineConfigName, list[ExperimentData]] = {}
         for engine in self.engine_params:
             outstanding_experiments[engine.config_name] = []
             existing = set(submitted_experiments.get(engine.config_name, []))
+
+            # Remove failed IDs from existing so they appear as outstanding
+            if resubmit_failed_ids and engine.config_name in resubmit_failed_ids:
+                existing = existing - resubmit_failed_ids[engine.config_name]
+
             outstanding_experiments[engine.config_name] = list(
                 self.experiments.difference(existing)
             )

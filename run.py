@@ -93,6 +93,8 @@ def parse_args():
                         help='Force resubmission of batches, overriding submitted experiments tracking (batch runtime only)')
     parser.add_argument('--monitor-only', action='store_true', default=False,
                         help='Monitor existing batches without submitting new ones (batch runtime only)')
+    parser.add_argument('--resubmit-failures', action='store_true', default=False,
+                        help='Resubmit failed experiments (keeps failure records)')
     parser.add_argument('--experiment-count-limit', type=int, default=None,
                         help='Maximum number of experiments to run (for debugging)')
     return parser.parse_args()
@@ -150,6 +152,7 @@ async def main():
                 debug_mode=args.debug,
                 force_submit=args.force_submit,
                 monitor_only=args.monitor_only,
+                resubmit_failures=args.resubmit_failures,
             )
             runtime.run()
         case _:

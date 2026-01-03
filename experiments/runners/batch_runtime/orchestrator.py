@@ -11,7 +11,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TimeElapsedColumn
 
 from agent.src.core.tools import AddToCartTool
 from agent.src.typedefs import EngineConfigName, EngineParams, EngineType
-from experiments.config import ExperimentData
+from experiments.config import ExperimentData, ExperimentId
 from experiments.results import aggregate_run_data
 from experiments.runners.batch_runtime.providers import (anthropic, base, gemini,
                                                          openai)
@@ -39,6 +39,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         debug_mode: bool = False,
         force_submit: bool = False,
         monitor_only: bool = False,
+        resubmit_failures: bool = False,
         monitor_interval: int = DEFAULT_MONITOR_INTERVAL,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
@@ -104,6 +105,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         self.monitor_interval = monitor_interval
         self.experiment_count_limit = experiment_count_limit
         self.monitor_only = monitor_only
+        self.resubmit_failures = resubmit_failures
 
         self._setup_provider_tools()
 
@@ -186,8 +188,25 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
     def _load_experiments(self) -> dict[EngineConfigName, list[ExperimentData]]:
         """Select, load, and prepare environment."""
         submitted_experiments = self.experiment_tracker.load_submitted_experiments()
+
+        # Validate records against dataset
+        dataset_experiment_ids = {
+            exp.experiment_id for exp in self.experiment_loader.experiments
+        }
+        orphans = self.experiment_tracker.validate_against_dataset(dataset_experiment_ids)
+        self._print_orphan_warnings(orphans)
+
+        # Get failed IDs for resubmission if flag is set
+        resubmit_failed_ids = None
+        if self.resubmit_failures:
+            resubmit_failed_ids = {
+                config_name: {record.experiment_id for record in records}
+                for config_name, records in self.experiment_tracker.failed.items()
+            }
+
         outstanding_experiments = self.experiment_loader.load_outstanding_experiments(
-            submitted_experiments
+            submitted_experiments,
+            resubmit_failed_ids=resubmit_failed_ids,
         )
 
         if any(outstanding_experiments.values()):
