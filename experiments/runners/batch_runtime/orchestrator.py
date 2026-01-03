@@ -224,6 +224,70 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                 )
 
         return outstanding_experiments
+    def _print_orphan_warnings(
+        self, orphans: dict[EngineConfigName, dict[str, list[ExperimentId]]]
+    ) -> None:
+        """Print warnings for orphan records not found in dataset."""
+        for config_name, status_orphans in orphans.items():
+            for status, orphan_ids in status_orphans.items():
+                if orphan_ids:
+                    _print(
+                        f"[yellow]Warning: {len(orphan_ids)} {status} records "
+                        f"for {config_name} not found in dataset"
+                    )
+                    for oid in orphan_ids[:5]:
+                        _print(f"[yellow]  - {oid}")
+                    if len(orphan_ids) > 5:
+                        _print(f"[yellow]  ... and {len(orphan_ids) - 5} more")
+
+    def _print_submission_summary(
+        self,
+        outstanding_experiments: dict[EngineConfigName, list[ExperimentData]],
+        resubmit_failed_ids: dict[EngineConfigName, set[ExperimentId]] | None = None,
+    ) -> None:
+        """Print pre-submission status summary per model."""
+        _print("\n[bold blue]Pre-submission Summary:")
+        _print("=" * 60)
+
+        for engine_params in self.engine_params_list:
+            config_name = engine_params.config_name
+            completed = len(self.experiment_tracker.completed.get(config_name, []))
+            in_progress = len(self.experiment_tracker.in_progress.get(config_name, []))
+            failed = len(self.experiment_tracker.failed.get(config_name, []))
+            to_submit = len(outstanding_experiments.get(config_name, []))
+
+            # Count resubmissions (subset of to_submit)
+            resubmit_count = 0
+            if resubmit_failed_ids and config_name in resubmit_failed_ids:
+                outstanding_ids = {
+                    exp.experiment_id
+                    for exp in outstanding_experiments.get(config_name, [])
+                }
+                resubmit_count = len(resubmit_failed_ids[config_name] & outstanding_ids)
+
+            _print(f"\n[cyan]{config_name}:")
+            _print(f"  Completed:     {completed}")
+            _print(f"  In Progress:   {in_progress}")
+            _print(f"  Failed:        {failed}")
+            if resubmit_count:
+                _print(
+                    f"  [bold]To Submit:     {to_submit} ({resubmit_count} resubmissions)[/bold]"
+                )
+            else:
+                _print(f"  [bold]To Submit:     {to_submit}[/bold]")
+
+        _print("=" * 60 + "\n")
+
+    def _pause_before_submission(self, seconds: int = 10) -> None:
+        """Pause before submission with countdown."""
+        _print(
+            f"[yellow]Starting submission in {seconds} seconds... (Ctrl+C to cancel)"
+        )
+        for i in range(seconds, 0, -1):
+            print(f"\r{i}...", end="", flush=True)
+            sleep(1)
+        print()
+        _print("[green]Proceeding with submission...")
 
     def _save_serialized_batch_requests(
         self,
@@ -261,6 +325,16 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             return
 
         outstanding_experiments = self._load_experiments()
+        # Print pre-submission summary
+        self._print_submission_summary(outstanding_experiments, resubmit_failed_ids)
+
+        # Check if there's anything to submit
+        if not any(outstanding_experiments.values()):
+            _print("[green]No experiments to submit. All complete!")
+            return
+
+        # Pause before submission
+        self._pause_before_submission(seconds=10)
 
         # prepare submissions
         batch_requests: dict[EngineConfigName, BatchRequest] = {}
