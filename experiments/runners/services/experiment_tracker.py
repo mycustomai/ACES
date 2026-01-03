@@ -118,6 +118,38 @@ class ExperimentTracker:
 
         return submitted_experiments
 
+    def validate_against_dataset(
+        self, dataset_experiment_ids: set[ExperimentId]
+    ) -> dict[EngineConfigName, dict[str, list[ExperimentId]]]:
+        """Validate tracked experiments against the dataset.
+
+        Returns orphan records: records in tracker but not in dataset.
+        """
+        orphans: dict[EngineConfigName, dict[str, list[ExperimentId]]] = {}
+
+        all_config_names = (
+            set(self.completed.keys())
+            | set(self.in_progress.keys())
+            | set(self.failed.keys())
+        )
+
+        for config_name in all_config_names:
+            orphans[config_name] = {"completed": [], "in_progress": [], "failed": []}
+
+            for record in self.completed.get(config_name, []):
+                if record.experiment_id not in dataset_experiment_ids:
+                    orphans[config_name]["completed"].append(record.experiment_id)
+
+            for record in self.in_progress.get(config_name, []):
+                if record.experiment_id not in dataset_experiment_ids:
+                    orphans[config_name]["in_progress"].append(record.experiment_id)
+
+            for record in self.failed.get(config_name, []):
+                if record.experiment_id not in dataset_experiment_ids:
+                    orphans[config_name]["failed"].append(record.experiment_id)
+
+        return orphans
+
     def get_experiment_ids_for_batch(
         self, batch_id: ProviderBatchId, config_name: EngineConfigName
     ) -> list[ExperimentId]:
