@@ -185,7 +185,10 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                 case _:
                     raise ValueError(f"Unsupported engine type: {engine_type}")
 
-    def _load_experiments(self) -> dict[EngineConfigName, list[ExperimentData]]:
+    def _load_experiments(self) -> tuple[
+        dict[EngineConfigName, list[ExperimentData]],
+        dict[EngineConfigName, set[ExperimentId]] | None,
+    ]:
         """Select, load, and prepare environment."""
         submitted_experiments = self.experiment_tracker.load_submitted_experiments()
 
@@ -223,7 +226,8 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                     outstanding_experiments.values(), verbose=self.debug_mode
                 )
 
-        return outstanding_experiments
+        return outstanding_experiments, resubmit_failed_ids
+
     def _print_orphan_warnings(
         self, orphans: dict[EngineConfigName, dict[str, list[ExperimentId]]]
     ) -> None:
@@ -324,7 +328,8 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             _print("[bold green]Batch monitoring complete!")
             return
 
-        outstanding_experiments = self._load_experiments()
+        outstanding_experiments, resubmit_failed_ids = self._load_experiments()
+
         # Print pre-submission summary
         self._print_submission_summary(outstanding_experiments, resubmit_failed_ids)
 
