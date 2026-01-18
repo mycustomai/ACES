@@ -1,3 +1,4 @@
 engine_type: anthropic
 model: claude-3-7-sonnet-20250219
+display_name: Claude Sonnet 3.7
 temperature: 1.0

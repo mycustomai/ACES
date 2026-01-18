@@ -1,4 +1,5 @@
 engine_type: gemini
 model: gemini-3-pro-preview
+display_name: Gemini 3 Pro Preview
 temperature: 1.0
 thinking_level: low

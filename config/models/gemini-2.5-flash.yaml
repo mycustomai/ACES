@@ -1,4 +1,5 @@
 engine_type: gemini
 model: gemini-2.5-flash
+display_name: Gemini 2.5 Flash
 temperature: 1.0
 thinking_budget: 0.0
