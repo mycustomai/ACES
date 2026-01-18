@@ -9,12 +9,14 @@ gpt-4o-2024-11-20: GPT-4o
 gpt-4.1-2025-04-14: GPT-4.1
 gpt-5: GPT-5
 gpt-5.1: GPT-5.1
+gpt-5.2: GPT-5.2
 
 # Google
 gemini-2.0-flash: Gemini 2.0 Flash
 gemini-2.5-flash-preview-05-20: Gemini 2.5 Flash Preview
 gemini-2.5-flash: Gemini 2.5 Flash
 gemini-3-pro-preview: Gemini 3 Pro Preview
+gemini-3-flash-preview: Gemini 3 Flash Preview
 
 # AWS Bedrock
 amazon.nova-lite-v1:0: Nova Lite v1
