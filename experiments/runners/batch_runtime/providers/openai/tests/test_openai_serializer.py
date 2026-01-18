@@ -5,7 +5,6 @@ import pandas as pd
 import pytest
 
 from agent.src.core.tools import AddToCartTool
-from agent.src.typedefs import EngineParams, EngineType
 from experiments.config import ExperimentData, InstructionConfig
 from experiments.runners.batch_runtime.providers.openai.serializer import \
     OpenAIBatchProviderSerializer
@@ -14,17 +13,7 @@ from experiments.runners.batch_runtime.typedefs import (BatchRequest,
 
 
 @pytest.fixture
-def engine_params():
-    return EngineParams(
-        engine_type=EngineType.OPENAI,
-        model="test-model",
-        max_new_tokens=100,
-        temperature=0.7,
-    )
-
-
-@pytest.fixture
-def batch_request(engine_params):
+def batch_request(mock_openai_params):
     # Create actual ExperimentData objects
     experiment1 = ExperimentData(
         experiment_label="test_exp1",
@@ -103,14 +92,14 @@ def batch_request(engine_params):
     return BatchRequest(
         experiments=[experiment1, experiment2, experiment3],
         raw_messages=raw_messages,
-        engine_params=engine_params,
+        engine_params=mock_openai_params,
         tools=[AddToCartTool()],
     )
 
 
 @pytest.fixture
-def serializer(engine_params):
-    return OpenAIBatchProviderSerializer(engine_params)
+def serializer(mock_openai_params):
+    return OpenAIBatchProviderSerializer(mock_openai_params)
 
 
 def test_serialize_returns_correct_provider_requests(serializer, batch_request):
@@ -135,10 +124,10 @@ def test_serialize_returns_correct_provider_requests(serializer, batch_request):
         assert d["custom_id"] == exp_id
         assert d["method"] == "POST"
         assert d["url"] == "/v1/chat/completions"
-        assert d["body"]["model"] == "test-model"
+        assert d["body"]["model"] == "gpt-4.1"
         assert d["body"]["messages"] == messages
-        assert d["body"]["max_tokens"] == 100
-        assert d["body"]["temperature"] == 0.7
+        assert d["body"]["max_tokens"] == 1000
+        assert d["body"]["temperature"] == 0.0
         # Check that tools are serialized correctly according to OpenAI API format
         tools = d["body"]["tools"]
         assert len(tools) == 1

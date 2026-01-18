@@ -5,7 +5,6 @@ Tests for OpenAI Batch API response models and deserializer
 import pytest
 from pydantic import ValidationError
 
-from agent.src.typedefs import EngineParams, EngineType
 from experiments.config import ExperimentId
 from experiments.runners.batch_runtime.providers.openai.deserializer import \
     OpenAIBatchProviderDeserializer
@@ -14,6 +13,12 @@ from experiments.runners.batch_runtime.providers.openai.models import \
 from experiments.runners.batch_runtime.typedefs import (BatchResult,
                                                         ExperimentFailureModes,
                                                         ProviderBatchResult)
+
+
+@pytest.fixture
+def openai_deserializer(mock_openai_params):
+    """Create deserializer using shared mock_openai_params fixture."""
+    return OpenAIBatchProviderDeserializer(mock_openai_params)
 
 
 class TestOpenAIModels:
@@ -43,17 +48,7 @@ class TestOpenAIModels:
 class TestOpenAIDeserializer:
     """Test OpenAI batch provider deserializer"""
 
-    def setup_method(self):
-        """Set up deserializer for each test"""
-        engine_params = EngineParams(
-            engine_type=EngineType.OPENAI,
-            model="gpt-3.5-turbo",
-            temperature=0.0,
-            max_new_tokens=1000,
-        )
-        self.deserializer = OpenAIBatchProviderDeserializer(engine_params)
-
-    def test_deserialize_error(self):
+    def test_deserialize_error(self, openai_deserializer):
         """Test deserialization with error"""
         provider_data = ProviderBatchResult(
             {
@@ -75,6 +70,6 @@ class TestOpenAIDeserializer:
             }
         )
 
-        result = self.deserializer.deserialize(provider_data)
+        result = openai_deserializer.deserialize(provider_data)
         assert result.data[0].failure_reason == ExperimentFailureModes.API_ERROR
         assert "Invalid request format" in result.data[0].response_content

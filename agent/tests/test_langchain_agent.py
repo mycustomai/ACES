@@ -18,17 +18,7 @@ from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AI
 
 class TestLMMAgent:
     """Test suite for LMMAgent."""
-    
-    @pytest.fixture
-    def dummy_engine_params(self):
-        """Provide dummy engine parameters for testing."""
-        return {
-            "engine_type": "anthropic",
-            "model": "claude-3-sonnet-20240229",
-            "api_key": "dummy-key-for-testing",
-            "temperature": 0.0
-        }
-    
+
     @pytest.fixture
     def agent(self, dummy_engine_params):
         """Create a test agent instance."""
@@ -205,35 +195,38 @@ class TestLMMAgentProviders:
             engine_params={
                 "engine_type": "openai",
                 "model": "gpt-3.5-turbo",
-                "api_key": "dummy-key-for-testing"
+                "display_name": "GPT 3.5 Turbo",
+                "api_key": "dummy-key-for-testing",
             }
         )
-        
+
         assert isinstance(agent.llm, ChatOpenAI)
-    
+
     def test_anthropic_provider(self):
         """Test Anthropic provider creation."""
         agent = LMMAgent(
             engine_params={
                 "engine_type": "anthropic",
                 "model": "claude-3-sonnet-20240229",
-                "api_key": "dummy-key-for-testing"
+                "display_name": "Claude 3 Sonnet",
+                "api_key": "dummy-key-for-testing",
             }
         )
-        
+
         assert isinstance(agent.llm, ChatAnthropic)
-    
+
     def test_gemini_provider(self):
         """Test Gemini provider creation."""
         agent = LMMAgent(
             engine_params={
                 "engine_type": "gemini",
                 "model": "gemini-pro",
+                "display_name": "Gemini Pro",
                 "api_key": "dummy-key-for-testing",
-                "base_url": "https://dummy-gemini-endpoint.com"
+                "base_url": "https://dummy-gemini-endpoint.com",
             }
         )
-        
+
         # Gemini uses ChatOpenAI with custom base_url
         assert isinstance(agent.llm, ChatGoogleGenerativeAI)
     

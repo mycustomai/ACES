@@ -118,17 +118,10 @@ class TestOpenAIProviderBatchMonitorDownload:
     """Test batch result download functionality."""
 
     @pytest.fixture
-    def mock_engine_params(self):
-        """Mock engine parameters."""
-        return EngineParams(
-            engine_type=EngineType.OPENAI, model="gpt-4", api_key="test-key"
-        )
-
-    @pytest.fixture
-    def mock_monitor(self, mock_engine_params):
+    def mock_monitor(self, mock_openai_params):
         """Create a mock monitor instance."""
         with patch("openai.OpenAI"):
-            monitor = OpenAIProviderBatchMonitor(mock_engine_params)
+            monitor = OpenAIProviderBatchMonitor(mock_openai_params)
             monitor.client = Mock()
             return monitor
 
@@ -230,7 +223,10 @@ class TestOpenAIProviderBatchMonitorSetup:
         from pydantic import SecretStr
 
         engine_params = EngineParams(
-            engine_type=EngineType.OPENAI, model="gpt-4", api_key=SecretStr("test-key")
+            engine_type=EngineType.OPENAI,
+            model="gpt-4",
+            display_name="GPT 4",
+            api_key=SecretStr("test-key"),
         )
 
         with patch("openai.OpenAI") as mock_openai:
@@ -239,7 +235,9 @@ class TestOpenAIProviderBatchMonitorSetup:
 
     def test_setup_with_env_api_key(self):
         """Test setup with API key from environment."""
-        engine_params = EngineParams(engine_type=EngineType.OPENAI, model="gpt-4")
+        engine_params = EngineParams(
+            engine_type=EngineType.OPENAI, model="gpt-4", display_name="GPT 4"
+        )
 
         with (
             patch("openai.OpenAI") as mock_openai,
@@ -250,7 +248,9 @@ class TestOpenAIProviderBatchMonitorSetup:
 
     def test_setup_no_api_key_raises_error(self):
         """Test setup without API key raises error."""
-        engine_params = EngineParams(engine_type=EngineType.OPENAI, model="gpt-4")
+        engine_params = EngineParams(
+            engine_type=EngineType.OPENAI, model="gpt-4", display_name="GPT 4"
+        )
 
         with patch.dict("os.environ", {}, clear=True):
             with pytest.raises(ValueError, match="No OpenAI API key configured"):
@@ -261,17 +261,10 @@ class TestOpenAIProviderBatchMonitorBatches:
     """Test batch monitoring functionality."""
 
     @pytest.fixture
-    def mock_engine_params(self):
-        """Mock engine parameters."""
-        return EngineParams(
-            engine_type=EngineType.OPENAI, model="gpt-4", api_key="test-key"
-        )
-
-    @pytest.fixture
-    def mock_monitor(self, mock_engine_params):
+    def mock_monitor(self, mock_openai_params):
         """Create a mock monitor instance."""
         with patch("openai.OpenAI"):
-            monitor = OpenAIProviderBatchMonitor(mock_engine_params)
+            monitor = OpenAIProviderBatchMonitor(mock_openai_params)
             monitor.client = Mock()
             return monitor
 
@@ -377,10 +370,10 @@ class TestOpenAIProviderBatchMonitorBatches:
         assert results[2].status == BatchStatus.FAILED
         assert results[2].result is None
 
-    def test_monitor_batches_no_client_raises_error(self, mock_engine_params):
+    def test_monitor_batches_no_client_raises_error(self, mock_openai_params):
         """Test monitoring without client raises error."""
         with patch("openai.OpenAI"):
-            monitor = OpenAIProviderBatchMonitor(mock_engine_params)
+            monitor = OpenAIProviderBatchMonitor(mock_openai_params)
             monitor.client = None
 
             with pytest.raises(ValueError, match="OpenAI client not configured"):
