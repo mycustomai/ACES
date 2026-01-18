@@ -356,9 +356,10 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                     result.experiment_id for result in _deserialized_results.data
                 ]
 
-                assert len(result_experiment_ids) == len(experiment_ids), (
-                    f"Not all ids processed. Expected {len(experiment_ids)}, got {len(result_experiment_ids)}"
-                )
+                if not len(result_experiment_ids) == len(experiment_ids):
+                    _print(
+                        f"Not all ids processed. Expected {len(experiment_ids)}, got {len(result_experiment_ids)}"
+                    )
 
                 # process successful results
                 if progress_callback:
@@ -380,16 +381,19 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                     _print(f"[bold red]Reason: {failure_reasons}")
                     return
 
-                matching_experiment_data: list[ExperimentData] = [
-                    self.experiment_loader.get_experiment_by_id(r.experiment_id)
-                    for r in successful_results
-                ]
-
                 # Timer for processing step
                 processing_start_time = time.time()
-                for result, experiment in zip(
-                    successful_results, matching_experiment_data, strict=True
-                ):
+                processed_count = 0
+                for result in successful_results:
+                    try:
+                        experiment = self.experiment_loader.get_experiment_by_id(result.experiment_id)
+                    except KeyError as e:
+                        if engine_params.engine_type == EngineType.GEMINI:
+                            # likely a mismatch in batch results.
+                            # known issue. See https://github.com/MyCustomAI/ACES/issues/77
+                            continue
+                        else:
+                            raise e
                     processed = self.simulator.process_experiment_result(
                         experiment, engine_params, result
                     )
@@ -397,13 +401,12 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
                         _print(
                             f"[bold red]Failed to process experiment: {experiment.experiment_id}"
                         )
+                    processed_count += 1
                 processing_end_time = time.time()
 
                 processing_duration = processing_end_time - processing_start_time
-                if self.debug_mode and successful_results:
-                    avg_time_per_experiment = processing_duration / len(
-                        successful_results
-                    )
+                if self.debug_mode and processed_count:
+                    avg_time_per_experiment = processing_duration / processed_count
                     _print(
                         f"[dim]Processing completed in {processing_duration:.2f}s (avg: {avg_time_per_experiment:.2f}s per experiment)"
                     )
