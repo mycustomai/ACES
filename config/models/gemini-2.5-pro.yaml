@@ -1,0 +1,5 @@
+engine_type: gemini
+model: gemini-2.5-pro
+display_name: Gemini 2.5 Pro
+temperature: 1.0
+thinking_budget: 500
