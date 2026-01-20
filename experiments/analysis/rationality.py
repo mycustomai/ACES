@@ -3,7 +3,6 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import scipy.stats as stats
 
 from experiments.analysis.common import SanityCheckMode
 
