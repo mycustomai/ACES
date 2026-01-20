@@ -336,11 +336,11 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         engine_params: EngineParams,
         progress_callback: Optional[Progress.update] = None,
     ) -> None:
-        experiment_ids = self.experiment_tracker.get_experiment_ids_for_batch(
-            batch.batch_id
-        )
-
         config_name = engine_params.config_name
+
+        experiment_ids = self.experiment_tracker.get_experiment_ids_for_batch(
+            batch.batch_id, config_name
+        )
 
         # noinspection PyUnreachableCode
         match batch.status:
@@ -367,7 +367,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
 
                 successful_results, failure_reasons = (
                     self.experiment_tracker.filter_failed_results(
-                        _deserialized_results.data
+                        _deserialized_results.data, config_name
                     )
                 )
 

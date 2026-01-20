@@ -119,21 +119,21 @@ class ExperimentTracker:
         return submitted_experiments
 
     def get_experiment_ids_for_batch(
-        self, batch_id: ProviderBatchId
+        self, batch_id: ProviderBatchId, config_name: EngineConfigName
     ) -> list[ExperimentId]:
         """Get experiment IDs associated with a batch ID.
 
         Args:
             batch_id: The provider batch ID to look up.
+            config_name: The engine config name to search within.
 
         Returns:
             List of experiment IDs associated with the batch.
         """
         experiment_ids = []
-        for engine_config, records in self.in_progress.items():
-            for submission_record in records:
-                if submission_record.batch_id == batch_id:
-                    experiment_ids.append(submission_record.experiment_id)
+        for submission_record in self.in_progress[config_name]:
+            if submission_record.batch_id == batch_id:
+                experiment_ids.append(submission_record.experiment_id)
         return experiment_ids
 
     def set_experiments_in_progress(
@@ -189,10 +189,9 @@ class ExperimentTracker:
         """
         # find all associated experiment records
         associated_experiments: list[ExperimentSubmissionRecord] = []
-        for engine_config, records in self.in_progress.items():
-            for submission_record in records:
-                if submission_record.batch_id == batch_id:
-                    associated_experiments.append(submission_record.model_copy())
+        for submission_record in self.in_progress[config_name]:
+            if submission_record.batch_id == batch_id:
+                associated_experiments.append(submission_record.model_copy())
 
         if not associated_experiments:
             raise ValueError(
@@ -222,7 +221,7 @@ class ExperimentTracker:
                 )
 
     def filter_failed_results(
-        self, data: list[ExperimentResult]
+        self, data: list[ExperimentResult], config_name: EngineConfigName
     ) -> tuple[list[ExperimentResult], dict[ExperimentFailureModes, int]]:
         """Filter out failed experiment results and move corresponding submission records to failed state.
 
@@ -237,23 +236,25 @@ class ExperimentTracker:
         failure_reasons = defaultdict(int)
 
         # Process failed results
+        failed = 0
         for failed_result in failed_results:
             submission_record = None
             all_experiment_ids = [
                 record.experiment_id
-                for records in self.in_progress.values()
-                for record in records
+                for record in self.in_progress[config_name]
             ]
-            failed_experiment_id = EncodedExperimentIdMixin.resolve_experiment_id(
-                failed_result.experiment_id, all_experiment_ids
-            )
+            try:
+                failed_experiment_id = EncodedExperimentIdMixin.resolve_experiment_id(
+                    failed_result.experiment_id, all_experiment_ids
+                )
+            except ValueError:
+                # assume that the experiment is already been marked as failed
+                failed += 1
+                continue
 
-            for config_name, records in self.in_progress.items():
-                for record in records:
-                    if record.experiment_id == failed_experiment_id:
-                        submission_record = record
-                        break
-                if submission_record:
+            for record in self.in_progress[config_name]:
+                if record.experiment_id == failed_experiment_id:
+                    submission_record = record
                     break
 
             if submission_record:
@@ -265,5 +266,7 @@ class ExperimentTracker:
                 raise ValueError(
                     f"No in-progress submission record found for experiment_id: {failed_result.experiment_id}"
                 )
+
+        print(f"Got {failed} failed experiments")
 
         return successful_results, failure_reasons
