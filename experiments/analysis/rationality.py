@@ -7,6 +7,26 @@ import statsmodels.api as sm
 from experiments.analysis.common import SanityCheckMode
 
 
+# TODO: externally define; ensure cleaning step is generic
+def _clean_data(df: pd.DataFrame, experiment_labels: Iterable[str]) -> pd.DataFrame:
+    """Drop problematic queries in experiments.
+
+    In this case: "washing_machine" and "fitness_watch" in sc_rating_increase_10_bps
+    """
+    _target_experiment_label = "sc_rating_increase_10_bps"
+    _drop_queries = ["washing_machine", "fitness_watch"]
+
+    if _target_experiment_label not in experiment_labels:
+        return df
+
+    drop_mask = (
+        (df["experiment_label"] == "sc_rating_increase_10_bps")
+        & df["query"].isin(_drop_queries)
+    )
+    df_filtered = df.loc[~drop_mask].copy()
+    return df_filtered
+
+
 def sanity_checks_passed(
     orig_df: pd.DataFrame,
     experiment_labels: Iterable[str],
@@ -19,6 +39,8 @@ def sanity_checks_passed(
         & orig_df["query"].isin(queries)
     )
     df_filtered = orig_df.loc[mask].copy()
+
+    df_filtered = _clean_data(df_filtered, experiment_labels)
 
     df_filtered["selected"] = df_filtered["selected"].clip(lower=0, upper=1)
 
