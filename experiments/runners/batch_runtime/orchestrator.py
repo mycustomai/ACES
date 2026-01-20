@@ -38,6 +38,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         experiment_label_filter: Optional[str] = None,
         debug_mode: bool = False,
         force_submit: bool = False,
+        monitor_only: bool = False,
         monitor_interval: int = DEFAULT_MONITOR_INTERVAL,
         local_dataset_path: Optional[str] = None,
         hf_dataset_name: Optional[str] = None,
@@ -102,6 +103,7 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
         self.engine_params_list = engine_params_list
         self.monitor_interval = monitor_interval
         self.experiment_count_limit = experiment_count_limit
+        self.monitor_only = monitor_only
 
         self._setup_provider_tools()
 
@@ -230,6 +232,15 @@ class BatchOrchestratorRuntime(BaseEvaluationRuntime):
             )
 
     def run(self):
+        if self.monitor_only:
+            _print("[bold blue]Monitor-only mode: skipping batch submission")
+            self.experiment_tracker.load_submitted_experiments()
+            self._monitor_batches()
+            _print("[green]Aggregating run data... ")
+            aggregate_run_data(str(self.run_output_dir))
+            _print("[bold green]Batch monitoring complete!")
+            return
+
         outstanding_experiments = self._load_experiments()
 
         # prepare submissions
