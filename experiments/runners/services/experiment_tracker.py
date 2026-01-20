@@ -118,6 +118,38 @@ class ExperimentTracker:
 
         return submitted_experiments
 
+    def validate_against_dataset(
+        self, dataset_experiment_ids: set[ExperimentId]
+    ) -> dict[EngineConfigName, dict[str, list[ExperimentId]]]:
+        """Validate tracked experiments against the dataset.
+
+        Returns orphan records: records in tracker but not in dataset.
+        """
+        orphans: dict[EngineConfigName, dict[str, list[ExperimentId]]] = {}
+
+        all_config_names = (
+            set(self.completed.keys())
+            | set(self.in_progress.keys())
+            | set(self.failed.keys())
+        )
+
+        for config_name in all_config_names:
+            orphans[config_name] = {"completed": [], "in_progress": [], "failed": []}
+
+            for record in self.completed.get(config_name, []):
+                if record.experiment_id not in dataset_experiment_ids:
+                    orphans[config_name]["completed"].append(record.experiment_id)
+
+            for record in self.in_progress.get(config_name, []):
+                if record.experiment_id not in dataset_experiment_ids:
+                    orphans[config_name]["in_progress"].append(record.experiment_id)
+
+            for record in self.failed.get(config_name, []):
+                if record.experiment_id not in dataset_experiment_ids:
+                    orphans[config_name]["failed"].append(record.experiment_id)
+
+        return orphans
+
     def get_experiment_ids_for_batch(
         self, batch_id: ProviderBatchId, config_name: EngineConfigName
     ) -> list[ExperimentId]:
@@ -170,7 +202,10 @@ class ExperimentTracker:
         failed_file = self._get_failed_dir(config_name) / f"{record.experiment_id}.json"
 
         if in_progress_file.exists():
-            in_progress_file.rename(failed_file)
+            in_progress_file.unlink()
+            # Write updated record with failure_result
+            with open(failed_file, "w") as f:
+                json.dump(record.model_dump(), f, indent=2)
         else:
             raise RuntimeError(f"In-progress file does not exist: {in_progress_file}")
 
@@ -195,7 +230,7 @@ class ExperimentTracker:
 
         if not associated_experiments:
             print(
-                f"No in-progress experiments found with batch_id: {batch_id}"
+                f"No in-progress experiments found with batch_id: {batch_id} (experiments may be complete or failed)"
             )
 
         for exp in associated_experiments:
@@ -236,7 +271,7 @@ class ExperimentTracker:
         failure_reasons = defaultdict(int)
 
         # Process failed results
-        failed = 0
+        already_processed = 0
         for failed_result in failed_results:
             submission_record = None
             all_experiment_ids = [
@@ -248,8 +283,8 @@ class ExperimentTracker:
                     failed_result.experiment_id, all_experiment_ids
                 )
             except ValueError:
-                # assume that the experiment is already been marked as failed
-                failed += 1
+                # experiment not in in_progress, assume already processed
+                already_processed += 1
                 continue
 
             for record in self.in_progress[config_name]:
@@ -267,6 +302,7 @@ class ExperimentTracker:
                     f"No in-progress submission record found for experiment_id: {failed_result.experiment_id}"
                 )
 
-        print(f"Got {failed} failed experiments")
+        moved_count = len(failed_results) - already_processed
+        print(f"Batch had {len(failed_results)} failed experiments: {moved_count} moved to failed, {already_processed} already processed")
 
         return successful_results, failure_reasons
