@@ -39,9 +39,12 @@ def calculate_selection_stats(df: pd.DataFrame, error_term: int = 0.001) -> pd.D
         error_term: Constant to use as error term to make sure that percentage sums are sensible
 
     Returns:
-        DataFrame with columns: sum, count, percentage, std_error, short_title
+        DataFrame with columns: count, total, percentage, std_error, short_title
         indexed by (query, title)
     """
+    df = df.copy()
+    df["selected"] = df["selected"].clip(lower=0, upper=1)
+
     out = (
         df.groupby(["query", "title", "model_name"])["selected"]
         .agg(
