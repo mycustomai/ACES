@@ -4,6 +4,7 @@ import pytest
 
 from experiments.analysis.common import SanityCheckMode
 from experiments.analysis.rationality import (
+    _clean_data,
     calculate_sanity_check,
     get_mean_and_variance,
     sanity_checks_passed,
@@ -166,3 +167,33 @@ def test_calculate_sanity_check_formats_and_orders(rationality_df):
     assert table.loc["Model 1", "Experiment 2"] == "---"
     assert table.loc["Model 2", "Experiment 1"] == "---"
     assert table.loc["Model 2", "Experiment 2"] == "0.000 (0.000)"
+
+
+def test_clean_data_filters_problematic_queries():
+    rows = [
+        # Target experiment + problematic queries → should be removed
+        {"experiment_label": "sc_rating_increase_10_bps", "query": "washing_machine", "value": 1},
+        {"experiment_label": "sc_rating_increase_10_bps", "query": "fitness_watch", "value": 2},
+        # Target experiment + other query → should be kept
+        {"experiment_label": "sc_rating_increase_10_bps", "query": "other_query", "value": 3},
+        # Other experiment + problematic queries → should be kept
+        {"experiment_label": "other_experiment", "query": "washing_machine", "value": 4},
+        {"experiment_label": "other_experiment", "query": "fitness_watch", "value": 5},
+    ]
+    df = pd.DataFrame(rows)
+
+    # When target experiment NOT in experiment_labels: all rows preserved
+    result = _clean_data(df, experiment_labels=["other_experiment"])
+    assert len(result) == 5
+
+    # When target experiment IS in experiment_labels: filter applied
+    result = _clean_data(df, experiment_labels=["sc_rating_increase_10_bps", "other_experiment"])
+    assert len(result) == 3
+    # Problematic queries in target experiment removed
+    assert not ((result["experiment_label"] == "sc_rating_increase_10_bps") & (result["query"] == "washing_machine")).any()
+    assert not ((result["experiment_label"] == "sc_rating_increase_10_bps") & (result["query"] == "fitness_watch")).any()
+    # Other query in target experiment preserved
+    assert ((result["experiment_label"] == "sc_rating_increase_10_bps") & (result["query"] == "other_query")).any()
+    # Problematic queries in other experiments preserved
+    assert ((result["experiment_label"] == "other_experiment") & (result["query"] == "washing_machine")).any()
+    assert ((result["experiment_label"] == "other_experiment") & (result["query"] == "fitness_watch")).any()
