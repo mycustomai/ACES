@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from experiments.engine_loader import load_all_model_engine_params
 from experiments.runners import (
     BatchOrchestratorRuntime,
+    HeadlessRuntime,
     ScreenshotRuntime,
     SimpleEvaluationRuntime,
 )
@@ -74,7 +75,7 @@ def validate_dataset_subset(dataset_name: str, subset: Optional[str]) -> None:
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='AI Agent Impact Evaluation')
-    parser.add_argument('--runtime-type', choices=['simple', 'screenshot', 'batch'],
+    parser.add_argument('--runtime-type', choices=['simple', 'screenshot', 'batch', 'headless'],
                         default=RUNTIME_TYPE, help='Runtime type to use')
     parser.add_argument('--local-dataset', type=str,
                         help='Local dataset path')
@@ -155,6 +156,18 @@ async def main():
                 resubmit_failures=args.resubmit_failures,
             )
             runtime.run()
+        case "headless":
+            if not args.local_dataset:
+                raise ValueError("HeadlessRuntime requires --local-dataset argument")
+            print("Using HeadlessRuntime (headless product selection)")
+            runtime = HeadlessRuntime(
+                local_dataset_path=args.local_dataset,
+                engine_params_list=model_configs,
+                experiment_count_limit=args.experiment_count_limit,
+                experiment_label_filter=EXPERIMENT_LABEL_FILTER,
+                debug_mode=args.debug,
+            )
+            await runtime.run()
         case _:
             print("Using SimpleEvaluationRuntime (browser-based)")
             runtime = SimpleEvaluationRuntime(
