@@ -242,7 +242,7 @@ def plot_feature_impact_all_providers(
     )
 
     # Set x-ticks and labels (model names with dates, colored by provider)
-    labels = [f"{MODEL_METADATA[m][0]}\n{MODEL_METADATA[m][1].strftime('%b %Y')}" for m in model_ids]
+    labels = [f"{MODEL_METADATA[m][0]}\n{MODEL_METADATA[m][1].strftime('%b %d, %Y')}" for m in model_ids]
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=0, ha="center", fontsize=9)
     ax.tick_params(axis="x", pad=10)
@@ -406,7 +406,7 @@ def plot_feature_impact_by_provider(
                 )
 
         # Set x-ticks and labels (model names with dates)
-        labels = [f"{MODEL_METADATA[m][0]}\n{MODEL_METADATA[m][1].strftime('%b %Y')}" for m in model_ids]
+        labels = [f"{MODEL_METADATA[m][0]}\n{MODEL_METADATA[m][1].strftime('%b %d, %Y')}" for m in model_ids]
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=0, ha="center", fontsize=9)
         ax.tick_params(axis="x", pad=10)
