@@ -256,17 +256,20 @@ Shows how features (rating, price, tags) impact selection probability.
 
 ```bash
 # Generate all feature impact plots (rating, price, sponsored tag, overall pick)
+# Creates 8 plots: both all_providers and by_provider versions for each feature
 uv run visualization feature-impact all artifacts/analysis/20260122104301_choice_model.csv
 
-# Or generate specific feature plots only:
-uv run visualization feature-impact rating artifacts/analysis/20260122104301_choice_model.csv
-uv run visualization feature-impact price artifacts/analysis/20260122104301_choice_model.csv
-uv run visualization feature-impact tags artifacts/analysis/20260122104301_choice_model.csv  # Generates both sponsored tag and overall pick
+# Or generate specific feature plots:
+uv run visualization feature-impact rating artifacts/analysis/20260122104301_choice_model.csv  # 2 plots
+uv run visualization feature-impact price artifacts/analysis/20260122104301_choice_model.csv   # 2 plots
+uv run visualization feature-impact tags artifacts/analysis/20260122104301_choice_model.csv    # 4 plots (2 per tag)
 ```
 
 **Output:** `artifacts/visualization/feature_impact/`
 
-**Note:** The `tags` command generates plots for both "Sponsored Tag" and "Overall Pick" features.
+**Note:**
+- Each command generates **both** `all_providers` (all models on one plot) and `by_provider` (3 subplots) versions
+- The `tags` command generates plots for both "Sponsored Tag" and "Overall Pick" features (4 plots total)
 
 #### 4. Sanity Checks (from rationality suite analysis)
 Visualizes sanity check failure rates across models for rating, price, and instruction following experiments.
