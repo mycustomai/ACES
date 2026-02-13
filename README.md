@@ -210,6 +210,103 @@ uv run analysis rationality-suite rating experiment_logs/aggregated_experiment_d
 
 The `artifacts/analysis/` directory is the target output location of result CSV.
 
+## Visualization
+
+The `visualization` CLI generates plots from analysis results to visualize model performance, feature impacts, and sanity check failures.
+
+To use the `visualization` script, the `analysis` dependency group needs to be installed (same as Analysis above).
+
+```
+ Usage: visualization [OPTIONS] COMMAND [ARGS]...
+
+ Visualization CLI for generating plots from analysis results.
+
+╭─ Commands ───────────────────────────────────────────────────────────────╮
+│ position-bias     Generate position bias visualizations                  │
+│ heatmap          Generate position probability heatmaps                   │
+│ feature-impact   Generate feature impact visualizations                   │
+│ sanity-checks    Generate sanity check visualizations                     │
+╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+### Visualization Types
+
+#### 1. Position Bias (from choice model)
+Visualizes how product position in the 2×4 grid affects selection probability.
+
+```bash
+# Generate position bias plots (all_providers.png + by_provider.png)
+uv run visualization position-bias artifacts/analysis/20260122104301_choice_model.csv
+```
+
+**Output:** `artifacts/visualization/position_bias/`
+
+#### 2. Heatmaps (from choice model)
+Generates 2×4 position probability heatmaps for each model.
+
+```bash
+# Generate heatmaps for all models
+uv run visualization heatmap artifacts/analysis/20260122104301_choice_model.csv
+```
+
+**Output:** `artifacts/visualization/heatmaps/`
+
+#### 3. Feature Impact (from choice model)
+Shows how features (rating, price, tags) impact selection probability.
+
+```bash
+# Generate all feature impact plots (rating, price, sponsored tag, overall pick)
+uv run visualization feature-impact all artifacts/analysis/20260122104301_choice_model.csv
+
+# Or generate specific feature plots only:
+uv run visualization feature-impact rating artifacts/analysis/20260122104301_choice_model.csv
+uv run visualization feature-impact price artifacts/analysis/20260122104301_choice_model.csv
+uv run visualization feature-impact tags artifacts/analysis/20260122104301_choice_model.csv  # Generates both sponsored tag and overall pick
+```
+
+**Output:** `artifacts/visualization/feature_impact/`
+
+**Note:** The `tags` command generates plots for both "Sponsored Tag" and "Overall Pick" features.
+
+#### 4. Sanity Checks (from rationality suite analysis)
+Visualizes sanity check failure rates across models for rating, price, and instruction following experiments.
+
+```bash
+# Generate rating sanity check plots
+uv run visualization sanity-checks rating artifacts/analysis/20260121184134_rating_sanity_check.csv
+
+# Generate price sanity check plots (combines price and ar_price data)
+uv run visualization sanity-checks price \
+  artifacts/analysis/20260212101910_price_sanity_check.csv \
+  artifacts/analysis/20260213120645_ar_price_sanity_check.csv
+
+# Generate instruction following plots
+uv run visualization sanity-checks instruction artifacts/analysis/20260212101915_instruction_sanity_check.csv
+
+# Generate ALL sanity check plots at once
+uv run visualization sanity-checks all \
+  artifacts/analysis/20260121184134_rating_sanity_check.csv \
+  artifacts/analysis/20260212101910_price_sanity_check.csv \
+  artifacts/analysis/20260213120645_ar_price_sanity_check.csv \
+  artifacts/analysis/20260212101915_instruction_sanity_check.csv
+```
+
+**Output:** `artifacts/visualization/sanity_checks/`
+
+### Visualization Output Structure
+
+All visualization plots are organized in subdirectories under `artifacts/visualization/`:
+
+```
+artifacts/visualization/
+├── position_bias/       # Position bias across models
+├── heatmaps/           # 2×4 position probability heatmaps
+├── feature_impact/     # Feature impact on selection probability
+└── sanity_checks/      # Rationality suite sanity check failure rates
+```
+
+Each visualization type generates plots grouped by provider (Anthropic, Google, OpenAI) showing model performance evolution by release date.
+
 ## Repository Layout
 
 ```
