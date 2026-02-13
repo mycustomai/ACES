@@ -451,7 +451,15 @@ def plot_feature_impact_by_provider(
 
 
 def plot_rating_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
-    """Generate rating impact visualization by provider."""
+    """Generate rating impact visualizations (both all_providers and by_provider)."""
+    plot_feature_impact_all_providers(
+        csv_path,
+        output_dir / "rating_increase_all_providers.png",
+        feature_name="Rating +0.1",
+        coefficient_name="rating",
+        rating_change=0.1,
+        baseline_prob=baseline_prob,
+    )
     plot_feature_impact_by_provider(
         csv_path,
         output_dir / "rating_increase_by_provider.png",
@@ -463,7 +471,15 @@ def plot_rating_impact_by_provider(csv_path: Path, output_dir: Path, baseline_pr
 
 
 def plot_price_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
-    """Generate price impact visualization by provider."""
+    """Generate price impact visualizations (both all_providers and by_provider)."""
+    plot_feature_impact_all_providers(
+        csv_path,
+        output_dir / "price_decrease_all_providers.png",
+        feature_name="Price -5%",
+        coefficient_name="log_price",
+        price_percentage_change=-0.05,
+        baseline_prob=baseline_prob,
+    )
     plot_feature_impact_by_provider(
         csv_path,
         output_dir / "price_decrease_by_provider.png",
@@ -475,8 +491,15 @@ def plot_price_impact_by_provider(csv_path: Path, output_dir: Path, baseline_pro
 
 
 def plot_tags_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
-    """Generate tags impact visualization by provider."""
-    # Sponsored tag
+    """Generate tags impact visualizations (both all_providers and by_provider for each tag)."""
+    # Sponsored tag - both versions
+    plot_feature_impact_all_providers(
+        csv_path,
+        output_dir / "sponsored_tag_all_providers.png",
+        feature_name="Sponsored Tag",
+        coefficient_name="sponsored_tag",
+        baseline_prob=baseline_prob,
+    )
     plot_feature_impact_by_provider(
         csv_path,
         output_dir / "sponsored_tag_by_provider.png",
@@ -485,7 +508,14 @@ def plot_tags_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob
         baseline_prob=baseline_prob,
     )
 
-    # Overall pick tag
+    # Overall pick tag - both versions
+    plot_feature_impact_all_providers(
+        csv_path,
+        output_dir / "overall_pick_all_providers.png",
+        feature_name="Overall Pick",
+        coefficient_name="overall_pick_tag",
+        baseline_prob=baseline_prob,
+    )
     plot_feature_impact_by_provider(
         csv_path,
         output_dir / "overall_pick_by_provider.png",

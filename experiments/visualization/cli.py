@@ -155,7 +155,7 @@ def feature_impact_all(csv_file: Path) -> None:
 
 @feature_impact_app.command("rating")
 def feature_impact_rating(csv_file: Path) -> None:
-    """Generate rating feature impact visualizations only."""
+    """Generate rating feature impact visualizations (all_providers + by_provider)."""
     if not csv_file.exists():
         typer.echo(f"Error: File not found: {csv_file}", err=True)
         raise typer.Exit(1)
@@ -164,12 +164,12 @@ def feature_impact_rating(csv_file: Path) -> None:
 
     output_dir = Path("artifacts/visualization/feature_impact")
     plot_rating_impact_by_provider(csv_file, output_dir)
-    typer.echo(f"Rating impact plot generated in {output_dir}/")
+    typer.echo(f"Rating impact plots generated in {output_dir}/ (all_providers + by_provider)")
 
 
 @feature_impact_app.command("price")
 def feature_impact_price(csv_file: Path) -> None:
-    """Generate price feature impact visualizations only."""
+    """Generate price feature impact visualizations (all_providers + by_provider)."""
     if not csv_file.exists():
         typer.echo(f"Error: File not found: {csv_file}", err=True)
         raise typer.Exit(1)
@@ -178,12 +178,12 @@ def feature_impact_price(csv_file: Path) -> None:
 
     output_dir = Path("artifacts/visualization/feature_impact")
     plot_price_impact_by_provider(csv_file, output_dir)
-    typer.echo(f"Price impact plot generated in {output_dir}/")
+    typer.echo(f"Price impact plots generated in {output_dir}/ (all_providers + by_provider)")
 
 
 @feature_impact_app.command("tags")
 def feature_impact_tags(csv_file: Path) -> None:
-    """Generate tags feature impact visualizations only."""
+    """Generate tags feature impact visualizations (all_providers + by_provider for both tags)."""
     if not csv_file.exists():
         typer.echo(f"Error: File not found: {csv_file}", err=True)
         raise typer.Exit(1)
@@ -192,7 +192,7 @@ def feature_impact_tags(csv_file: Path) -> None:
 
     output_dir = Path("artifacts/visualization/feature_impact")
     plot_tags_impact_by_provider(csv_file, output_dir)
-    typer.echo(f"Tags impact plot generated in {output_dir}/")
+    typer.echo(f"Tags impact plots generated in {output_dir}/ (4 plots: all_providers + by_provider for sponsored tag and overall pick)")
 
 
 if __name__ == "__main__":
