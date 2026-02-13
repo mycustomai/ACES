@@ -58,6 +58,7 @@ members = [
 
 [project.scripts]
 analysis = "experiments.analysis.cli:app"
+visualization = "experiments.visualization.cli:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]

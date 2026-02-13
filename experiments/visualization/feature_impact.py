@@ -450,11 +450,53 @@ def plot_feature_impact_by_provider(
     print(f"Saved: {output_path}")
 
 
-if __name__ == "__main__":
-    csv_path = Path("artifacts/analysis/20260122104301_choice_model.csv")
-    output_dir = Path("artifacts/visualization/feature_impact")
+def plot_rating_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
+    """Generate rating impact visualization by provider."""
+    plot_feature_impact_by_provider(
+        csv_path,
+        output_dir / "rating_increase_by_provider.png",
+        feature_name="Rating +0.1",
+        coefficient_name="rating",
+        rating_change=0.1,
+        baseline_prob=baseline_prob,
+    )
 
-    # Generate separate plots for each feature (both all providers and by provider)
+
+def plot_price_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
+    """Generate price impact visualization by provider."""
+    plot_feature_impact_by_provider(
+        csv_path,
+        output_dir / "price_decrease_by_provider.png",
+        feature_name="Price -5%",
+        coefficient_name="log_price",
+        price_percentage_change=-0.05,
+        baseline_prob=baseline_prob,
+    )
+
+
+def plot_tags_impact_by_provider(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
+    """Generate tags impact visualization by provider."""
+    # Sponsored tag
+    plot_feature_impact_by_provider(
+        csv_path,
+        output_dir / "sponsored_tag_by_provider.png",
+        feature_name="Sponsored Tag",
+        coefficient_name="sponsored_tag",
+        baseline_prob=baseline_prob,
+    )
+
+    # Overall pick tag
+    plot_feature_impact_by_provider(
+        csv_path,
+        output_dir / "overall_pick_by_provider.png",
+        feature_name="Overall Pick",
+        coefficient_name="overall_pick_tag",
+        baseline_prob=baseline_prob,
+    )
+
+
+def generate_all_feature_impact_plots(csv_path: Path, output_dir: Path, baseline_prob: float = 0.1) -> None:
+    """Generate all feature impact plots."""
     features = [
         ("Sponsored Tag", "sponsored_tag", None, None, "sponsored_tag"),
         ("Overall Pick", "overall_pick_tag", None, None, "overall_pick"),
@@ -471,7 +513,7 @@ if __name__ == "__main__":
             coefficient_name=coefficient_name,
             rating_change=rating_change,
             price_percentage_change=price_percentage_change,
-            baseline_prob=0.1,
+            baseline_prob=baseline_prob,
         )
 
         # By provider plot
@@ -482,5 +524,11 @@ if __name__ == "__main__":
             coefficient_name=coefficient_name,
             rating_change=rating_change,
             price_percentage_change=price_percentage_change,
-            baseline_prob=0.1,
+            baseline_prob=baseline_prob,
         )
+
+
+if __name__ == "__main__":
+    csv_path = Path("artifacts/analysis/20260122104301_choice_model.csv")
+    output_dir = Path("artifacts/visualization/feature_impact")
+    generate_all_feature_impact_plots(csv_path, output_dir)
