@@ -452,7 +452,7 @@ def plot_feature_impact_by_provider(
 
 if __name__ == "__main__":
     csv_path = Path("artifacts/analysis/20260122104301_choice_model.csv")
-    output_dir = Path("artifacts/visualization")
+    output_dir = Path("artifacts/visualization/feature_impact")
 
     # Generate separate plots for each feature (both all providers and by provider)
     features = [
@@ -466,7 +466,7 @@ if __name__ == "__main__":
         # All providers plot
         plot_feature_impact_all_providers(
             csv_path,
-            output_dir / f"feature_impact_{filename}_all_providers.png",
+            output_dir / f"{filename}_all_providers.png",
             feature_name=feature_name,
             coefficient_name=coefficient_name,
             rating_change=rating_change,
@@ -477,7 +477,7 @@ if __name__ == "__main__":
         # By provider plot
         plot_feature_impact_by_provider(
             csv_path,
-            output_dir / f"feature_impact_{filename}_by_provider.png",
+            output_dir / f"{filename}_by_provider.png",
             feature_name=feature_name,
             coefficient_name=coefficient_name,
             rating_change=rating_change,

@@ -64,7 +64,7 @@ def plot_heatmap(
 
     num_rows, num_cols = probabilities.shape
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(8, 4))
 
     # Use YlGnBu colormap like the example
     cmap = plt.cm.YlGnBu
@@ -109,24 +109,6 @@ def plot_heatmap(
     ax.set_xlim(-gap_x/2, num_cols * (box_width + gap_x))
     ax.set_ylim(-gap_y/2, num_rows * (box_height + gap_y))
     ax.axis('off')
-
-    # Add colorbar if requested
-    if not hide_colorbar:
-        cbar = fig.colorbar(
-            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
-            ax=ax, orientation='vertical', pad=0.02, shrink=0.7
-        )
-        cbar.set_label('Selection Probability', fontsize=18)
-        cbar.set_ticks(np.linspace(vmin, vmax, 5))
-        cbar.set_ticklabels([f'{val:.0%}' for val in np.linspace(vmin, vmax, 5)])
-        cbar.ax.tick_params(labelsize=14)
-
-    # Add title with model name in provider color
-    fig.text(
-        0.5, 0.95, display_name,
-        ha='center', fontsize=20, fontweight='bold',
-        color=PROVIDER_COLORS_DARK[provider]
-    )
 
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -181,7 +163,7 @@ def generate_all_heatmaps(csv_path: Path, output_dir: Path) -> None:
             output_path=output_path,
             vmin=vmin,
             vmax=vmax,
-            hide_colorbar=False,  # Show colorbar for reference
+            hide_colorbar=True,
         )
 
 

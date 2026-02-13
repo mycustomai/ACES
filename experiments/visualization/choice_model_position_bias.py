@@ -212,7 +212,7 @@ def plot_by_provider(csv_path: Path, output_path: Path) -> None:
 
 if __name__ == "__main__":
     csv_path = Path("artifacts/analysis/20260122104301_choice_model.csv")
-    output_dir = Path("artifacts/visualization")
+    output_dir = Path("artifacts/visualization/position_bias")
 
-    plot_all_providers(csv_path, output_dir / "position_bias_all_providers.png")
-    plot_by_provider(csv_path, output_dir / "position_bias_by_provider.png")
+    plot_all_providers(csv_path, output_dir / "all_providers.png")
+    plot_by_provider(csv_path, output_dir / "by_provider.png")
