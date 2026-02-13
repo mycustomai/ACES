@@ -276,6 +276,99 @@ def plot_category_combined(
     print(f"Saved: {output_path}")
 
 
+def generate_rating_plots(csv_file: Path, output_dir: Path) -> None:
+    """Generate all rating sanity check plots."""
+    _, tests, data = load_sanity_check_data(csv_file)
+
+    # Individual plots
+    tasks = [
+        (0, "rating_plus_0.1", "Rating +0.1 sanity check failure rates by provider", "+0.1 Rating"),
+        (1, "rating_random_low_variance", "Rating random (low variance) failure rates by provider", "Low Variance"),
+        (2, "rating_random_high_variance", "Rating random (high variance) failure rates by provider", "High Variance"),
+    ]
+
+    for task_idx, filename, title, task_label in tasks:
+        plot_single_task_by_provider(
+            data, task_idx, output_dir / f"{filename}.png",
+            title=title, task_label=task_label
+        )
+
+    # Combined plot
+    plot_category_combined(
+        data,
+        ["+0.1 Rating", "Low Variance", "High Variance"],
+        output_dir / "rating_combined.png",
+        title="Rating sanity checks combined (by release date)",
+    )
+
+
+def generate_price_plots(price_csv: Path, ar_price_csv: Path, output_dir: Path) -> None:
+    """Generate all price sanity check plots (combines price and ar_price data)."""
+    _, tests, data = load_combined_price_data(price_csv, ar_price_csv)
+
+    # Individual plots
+    tasks = [
+        (0, "price_random_low_variance", "Price random (low variance) failure rates by provider", "Random (Low Var)"),
+        (1, "price_random_high_variance", "Price random (high variance) failure rates by provider", "Random (High Var)"),
+        (2, "price_1_percent", "Price 1% reduction failure rates by provider", "1% Reduction"),
+        (3, "price_5_percent", "Price 5% reduction failure rates by provider", "5% Reduction"),
+        (4, "price_10_percent", "Price 10% reduction failure rates by provider", "10% Reduction"),
+    ]
+
+    for task_idx, filename, title, task_label in tasks:
+        plot_single_task_by_provider(
+            data, task_idx, output_dir / f"{filename}.png",
+            title=title, task_label=task_label
+        )
+
+    # Combined plot
+    plot_category_combined(
+        data,
+        ["Random (Low Var)", "Random (High Var)", "1% Reduction", "5% Reduction", "10% Reduction"],
+        output_dir / "price_combined.png",
+        title="Price sanity checks combined (by release date)",
+    )
+
+
+def generate_instruction_plots(csv_file: Path, output_dir: Path) -> None:
+    """Generate all instruction following sanity check plots."""
+    _, tests, data = load_sanity_check_data(csv_file)
+
+    # Individual plots
+    tasks = [
+        (0, "instruction_budget", "Instruction following (budget) failure rates by provider", "Budget"),
+        (1, "instruction_color", "Instruction following (color) failure rates by provider", "Color"),
+        (2, "instruction_brand", "Instruction following (brand) failure rates by provider", "Brand"),
+    ]
+
+    for task_idx, filename, title, task_label in tasks:
+        plot_single_task_by_provider(
+            data, task_idx, output_dir / f"{filename}.png",
+            title=title, task_label=task_label
+        )
+
+    # Combined plot
+    plot_category_combined(
+        data,
+        ["Budget", "Color", "Brand"],
+        output_dir / "instruction_combined.png",
+        title="Instruction following combined (by release date)",
+    )
+
+
+def generate_all_sanity_check_plots(
+    rating_csv: Path,
+    price_csv: Path,
+    ar_price_csv: Path,
+    instruction_csv: Path,
+    output_dir: Path,
+) -> None:
+    """Generate all sanity check plots."""
+    generate_rating_plots(rating_csv, output_dir)
+    generate_price_plots(price_csv, ar_price_csv, output_dir)
+    generate_instruction_plots(instruction_csv, output_dir)
+
+
 if __name__ == "__main__":
     base_output_dir = Path("artifacts/visualization/sanity_checks")
 
@@ -285,58 +378,4 @@ if __name__ == "__main__":
     ar_price_csv = Path("artifacts/analysis/20260213120645_ar_price_sanity_check.csv")
     instruction_csv = Path("artifacts/analysis/20260212101915_instruction_sanity_check.csv")
 
-    # Load data
-    _, rating_tests, rating_data = load_sanity_check_data(rating_csv)
-    _, price_tests, price_data = load_combined_price_data(price_csv, ar_price_csv)
-    _, instruction_tests, instruction_data = load_sanity_check_data(instruction_csv)
-
-    # Individual task plots
-    tasks = [
-        # Rating tasks
-        (rating_data, 0, "rating_plus_0.1", "Rating +0.1 sanity check failure rates by provider", "+0.1 Rating"),
-        (rating_data, 1, "rating_random_low_variance", "Rating random (low variance) failure rates by provider", "Low Variance"),
-        (rating_data, 2, "rating_random_high_variance", "Rating random (high variance) failure rates by provider", "High Variance"),
-
-        # Price tasks
-        (price_data, 0, "price_random_low_variance", "Price random (low variance) failure rates by provider", "Random (Low Var)"),
-        (price_data, 1, "price_random_high_variance", "Price random (high variance) failure rates by provider", "Random (High Var)"),
-        (price_data, 2, "price_1_percent", "Price 1% reduction failure rates by provider", "1% Reduction"),
-        (price_data, 3, "price_5_percent", "Price 5% reduction failure rates by provider", "5% Reduction"),
-        (price_data, 4, "price_10_percent", "Price 10% reduction failure rates by provider", "10% Reduction"),
-
-        # Instruction tasks
-        (instruction_data, 0, "instruction_budget", "Instruction following (budget) failure rates by provider", "Budget"),
-        (instruction_data, 1, "instruction_color", "Instruction following (color) failure rates by provider", "Color"),
-        (instruction_data, 2, "instruction_brand", "Instruction following (brand) failure rates by provider", "Brand"),
-    ]
-
-    for task_data, task_idx, filename, title, task_label in tasks:
-        plot_single_task_by_provider(
-            task_data,
-            task_idx,
-            base_output_dir / f"{filename}.png",
-            title=title,
-            task_label=task_label,
-        )
-
-    # Category combined plots
-    plot_category_combined(
-        rating_data,
-        ["+0.1 Rating", "Low Variance", "High Variance"],
-        base_output_dir / "rating_combined.png",
-        title="Rating sanity checks combined (by release date)",
-    )
-
-    plot_category_combined(
-        price_data,
-        ["Random (Low Var)", "Random (High Var)", "1% Reduction", "5% Reduction", "10% Reduction"],
-        base_output_dir / "price_combined.png",
-        title="Price sanity checks combined (by release date)",
-    )
-
-    plot_category_combined(
-        instruction_data,
-        ["Budget", "Color", "Brand"],
-        base_output_dir / "instruction_combined.png",
-        title="Instruction following combined (by release date)",
-    )
+    generate_all_sanity_check_plots(rating_csv, price_csv, ar_price_csv, instruction_csv, base_output_dir)

@@ -61,36 +61,10 @@ def sanity_checks_rating(csv_file: Path) -> None:
         typer.echo(f"Error: File not found: {csv_file}", err=True)
         raise typer.Exit(1)
 
-    from experiments.visualization.sanity_checks import (
-        load_sanity_check_data,
-        plot_single_task_by_provider,
-        plot_category_combined,
-    )
+    from experiments.visualization.sanity_checks import generate_rating_plots
 
     output_dir = Path("artifacts/visualization/sanity_checks")
-    _, tests, data = load_sanity_check_data(csv_file)
-
-    # Individual plots
-    tasks = [
-        (0, "rating_plus_0.1", "Rating +0.1 sanity check failure rates by provider", "+0.1 Rating"),
-        (1, "rating_random_low_variance", "Rating random (low variance) failure rates by provider", "Low Variance"),
-        (2, "rating_random_high_variance", "Rating random (high variance) failure rates by provider", "High Variance"),
-    ]
-
-    for task_idx, filename, title, task_label in tasks:
-        plot_single_task_by_provider(
-            data, task_idx, output_dir / f"{filename}.png",
-            title=title, task_label=task_label
-        )
-
-    # Combined plot
-    plot_category_combined(
-        data,
-        ["+0.1 Rating", "Low Variance", "High Variance"],
-        output_dir / "rating_combined.png",
-        title="Rating sanity checks combined (by release date)",
-    )
-
+    generate_rating_plots(csv_file, output_dir)
     typer.echo(f"Rating sanity check plots generated in {output_dir}/")
 
 
@@ -107,38 +81,10 @@ def sanity_checks_price(
         typer.echo(f"Error: File not found: {ar_price_csv}", err=True)
         raise typer.Exit(1)
 
-    from experiments.visualization.sanity_checks import (
-        load_combined_price_data,
-        plot_single_task_by_provider,
-        plot_category_combined,
-    )
+    from experiments.visualization.sanity_checks import generate_price_plots
 
     output_dir = Path("artifacts/visualization/sanity_checks")
-    _, tests, data = load_combined_price_data(price_csv, ar_price_csv)
-
-    # Individual plots
-    tasks = [
-        (0, "price_random_low_variance", "Price random (low variance) failure rates by provider", "Random (Low Var)"),
-        (1, "price_random_high_variance", "Price random (high variance) failure rates by provider", "Random (High Var)"),
-        (2, "price_1_percent", "Price 1% reduction failure rates by provider", "1% Reduction"),
-        (3, "price_5_percent", "Price 5% reduction failure rates by provider", "5% Reduction"),
-        (4, "price_10_percent", "Price 10% reduction failure rates by provider", "10% Reduction"),
-    ]
-
-    for task_idx, filename, title, task_label in tasks:
-        plot_single_task_by_provider(
-            data, task_idx, output_dir / f"{filename}.png",
-            title=title, task_label=task_label
-        )
-
-    # Combined plot
-    plot_category_combined(
-        data,
-        ["Random (Low Var)", "Random (High Var)", "1% Reduction", "5% Reduction", "10% Reduction"],
-        output_dir / "price_combined.png",
-        title="Price sanity checks combined (by release date)",
-    )
-
+    generate_price_plots(price_csv, ar_price_csv, output_dir)
     typer.echo(f"Price sanity check plots generated in {output_dir}/")
 
 
@@ -149,36 +95,10 @@ def sanity_checks_instruction(csv_file: Path) -> None:
         typer.echo(f"Error: File not found: {csv_file}", err=True)
         raise typer.Exit(1)
 
-    from experiments.visualization.sanity_checks import (
-        load_sanity_check_data,
-        plot_single_task_by_provider,
-        plot_category_combined,
-    )
+    from experiments.visualization.sanity_checks import generate_instruction_plots
 
     output_dir = Path("artifacts/visualization/sanity_checks")
-    _, tests, data = load_sanity_check_data(csv_file)
-
-    # Individual plots
-    tasks = [
-        (0, "instruction_budget", "Instruction following (budget) failure rates by provider", "Budget"),
-        (1, "instruction_color", "Instruction following (color) failure rates by provider", "Color"),
-        (2, "instruction_brand", "Instruction following (brand) failure rates by provider", "Brand"),
-    ]
-
-    for task_idx, filename, title, task_label in tasks:
-        plot_single_task_by_provider(
-            data, task_idx, output_dir / f"{filename}.png",
-            title=title, task_label=task_label
-        )
-
-    # Combined plot
-    plot_category_combined(
-        data,
-        ["Budget", "Color", "Brand"],
-        output_dir / "instruction_combined.png",
-        title="Instruction following combined (by release date)",
-    )
-
+    generate_instruction_plots(csv_file, output_dir)
     typer.echo(f"Instruction sanity check plots generated in {output_dir}/")
 
 
@@ -190,20 +110,25 @@ def sanity_checks_all(
     instruction_csv: Path,
 ) -> None:
     """Generate all sanity check visualizations."""
-    from typer import Context
+    if not rating_csv.exists():
+        typer.echo(f"Error: File not found: {rating_csv}", err=True)
+        raise typer.Exit(1)
+    if not price_csv.exists():
+        typer.echo(f"Error: File not found: {price_csv}", err=True)
+        raise typer.Exit(1)
+    if not ar_price_csv.exists():
+        typer.echo(f"Error: File not found: {ar_price_csv}", err=True)
+        raise typer.Exit(1)
+    if not instruction_csv.exists():
+        typer.echo(f"Error: File not found: {instruction_csv}", err=True)
+        raise typer.Exit(1)
 
-    ctx = Context(sanity_checks_app)
+    from experiments.visualization.sanity_checks import generate_all_sanity_check_plots
 
-    typer.echo("Generating rating plots...")
-    ctx.invoke(sanity_checks_rating, csv_file=rating_csv)
-
-    typer.echo("\nGenerating price plots...")
-    ctx.invoke(sanity_checks_price, price_csv=price_csv, ar_price_csv=ar_price_csv)
-
-    typer.echo("\nGenerating instruction plots...")
-    ctx.invoke(sanity_checks_instruction, csv_file=instruction_csv)
-
-    typer.echo("\nAll sanity check plots generated!")
+    output_dir = Path("artifacts/visualization/sanity_checks")
+    typer.echo("Generating all sanity check plots...")
+    generate_all_sanity_check_plots(rating_csv, price_csv, ar_price_csv, instruction_csv, output_dir)
+    typer.echo(f"\nAll sanity check plots generated in {output_dir}/")
 
 
 @feature_impact_app.callback(invoke_without_command=True)
