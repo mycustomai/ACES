@@ -296,16 +296,36 @@ uv run visualization sanity-checks all \
 
 **Output:** `artifacts/visualization/sanity_checks/`
 
+#### 5. Price-Equivalent Trade-offs (from choice model)
+Shows by what percentage a seller can raise (or must cut) price to keep utility constant when adding (or losing) a feature.
+
+```bash
+# Generate price-equivalent trade-off plots for all features
+# Creates 10 plots: 4 individual features + 1 combined (each with all_providers and by_provider versions)
+uv run visualization price-tradeoffs artifacts/analysis/20260122104301_choice_model.csv
+```
+
+**Output:** `artifacts/visualization/price_equivalent_tradeoffs/`
+
+**Features analyzed:**
+- **Overall Pick tag**: Price increase possible when adding this tag
+- **Rating +0.1**: Price increase possible when rating improves by 0.1
+- **Double Reviews**: Price increase possible when review count doubles
+- **Sponsored Tag**: Price cut needed to offset negative perception
+
+**Note:** Positive percentages indicate the seller can raise prices; negative percentages indicate the seller must cut prices.
+
 ### Visualization Output Structure
 
 All visualization plots are organized in subdirectories under `artifacts/visualization/`:
 
 ```
 artifacts/visualization/
-├── position_bias/       # Position bias across models
-├── heatmaps/           # 2×4 position probability heatmaps
-├── feature_impact/     # Feature impact on selection probability
-└── sanity_checks/      # Rationality suite sanity check failure rates
+├── position_bias/                  # Position bias across models
+├── heatmaps/                      # 2×4 position probability heatmaps
+├── feature_impact/                # Feature impact on selection probability
+├── sanity_checks/                 # Rationality suite sanity check failure rates
+└── price_equivalent_tradeoffs/    # Price-equivalent trade-offs for features
 ```
 
 Each visualization type generates plots grouped by provider (Anthropic, Google, OpenAI) showing model performance evolution by release date.

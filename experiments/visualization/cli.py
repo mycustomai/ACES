@@ -46,6 +46,20 @@ def heatmap(csv_file: Path) -> None:
     typer.echo(f"Heatmap plots generated in {output_dir}/")
 
 
+@app.command("price-tradeoffs")
+def price_tradeoffs(csv_file: Path) -> None:
+    """Generate price-equivalent trade-off visualizations from choice model CSV."""
+    if not csv_file.exists():
+        typer.echo(f"Error: File not found: {csv_file}", err=True)
+        raise typer.Exit(1)
+
+    from experiments.visualization.price_equivalent_tradeoffs import generate_all_price_equivalent_plots
+
+    output_dir = Path("artifacts/visualization/price_equivalent_tradeoffs")
+    generate_all_price_equivalent_plots(csv_file, output_dir)
+    typer.echo(f"Price-equivalent trade-off plots generated in {output_dir}/ (10 plots total)")
+
+
 @sanity_checks_app.callback(invoke_without_command=True)
 def sanity_checks_callback(ctx: typer.Context) -> None:
     """Generate sanity check visualizations."""

@@ -99,6 +99,7 @@ def draw_rounded_bar(
     color: str,
     fill: str = "white",
     rounding: float = 0.012,
+    hatch: str | None = "///",
 ) -> None:
     """Draw a bar with hatched pattern, rounded only on top."""
     from matplotlib.patches import Rectangle
@@ -118,7 +119,7 @@ def draw_rounded_bar(
         facecolor=fill,
         edgecolor=color,
         linewidth=1.0,
-        hatch="///",
+        hatch=hatch,
     )
     ax.add_patch(rect)
 
