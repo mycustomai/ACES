@@ -210,6 +210,126 @@ uv run analysis rationality-suite rating experiment_logs/aggregated_experiment_d
 
 The `artifacts/analysis/` directory is the target output location of result CSV.
 
+## Visualization
+
+The `visualization` CLI generates plots from analysis results to visualize model performance, feature impacts, and sanity check failures.
+
+To use the `visualization` script, the `analysis` dependency group needs to be installed (same as Analysis above).
+
+```
+ Usage: visualization [OPTIONS] COMMAND [ARGS]...
+
+ Visualization CLI for generating plots from analysis results.
+
+╭─ Commands ───────────────────────────────────────────────────────────────╮
+│ position-bias     Generate position bias visualizations                  │
+│ heatmap          Generate position probability heatmaps                   │
+│ feature-impact   Generate feature impact visualizations                   │
+│ sanity-checks    Generate sanity check visualizations                     │
+╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+### Visualization Types
+
+#### 1. Position Bias (from choice model)
+Visualizes how product position in the 2×4 grid affects selection probability.
+
+```bash
+# Generate position bias plots (all_providers.png + by_provider.png)
+uv run visualization position-bias artifacts/analysis/20260122104301_choice_model.csv
+```
+
+**Output:** `artifacts/visualization/position_bias/`
+
+#### 2. Heatmaps (from choice model)
+Generates 2×4 position probability heatmaps for each model.
+
+```bash
+# Generate heatmaps for all models
+uv run visualization heatmap artifacts/analysis/20260122104301_choice_model.csv
+```
+
+**Output:** `artifacts/visualization/heatmaps/`
+
+#### 3. Feature Impact (from choice model)
+Shows how features (rating, price, tags) impact selection probability.
+
+```bash
+# Generate all feature impact plots (rating, price, sponsored tag, overall pick)
+# Creates 8 plots: both all_providers and by_provider versions for each feature
+uv run visualization feature-impact all artifacts/analysis/20260122104301_choice_model.csv
+
+# Or generate specific feature plots:
+uv run visualization feature-impact rating artifacts/analysis/20260122104301_choice_model.csv  # 2 plots
+uv run visualization feature-impact price artifacts/analysis/20260122104301_choice_model.csv   # 2 plots
+uv run visualization feature-impact tags artifacts/analysis/20260122104301_choice_model.csv    # 4 plots (2 per tag)
+```
+
+**Output:** `artifacts/visualization/feature_impact/`
+
+**Note:**
+- Each command generates **both** `all_providers` (all models on one plot) and `by_provider` (3 subplots) versions
+- The `tags` command generates plots for both "Sponsored Tag" and "Overall Pick" features (4 plots total)
+
+#### 4. Sanity Checks (from rationality suite analysis)
+Visualizes sanity check failure rates across models for rating, price, and instruction following experiments.
+
+```bash
+# Generate rating sanity check plots
+uv run visualization sanity-checks rating artifacts/analysis/20260121184134_rating_sanity_check.csv
+
+# Generate price sanity check plots (combines price and ar_price data)
+uv run visualization sanity-checks price \
+  artifacts/analysis/20260212101910_price_sanity_check.csv \
+  artifacts/analysis/20260213120645_ar_price_sanity_check.csv
+
+# Generate instruction following plots
+uv run visualization sanity-checks instruction artifacts/analysis/20260212101915_instruction_sanity_check.csv
+
+# Generate ALL sanity check plots at once
+uv run visualization sanity-checks all \
+  artifacts/analysis/20260121184134_rating_sanity_check.csv \
+  artifacts/analysis/20260212101910_price_sanity_check.csv \
+  artifacts/analysis/20260213120645_ar_price_sanity_check.csv \
+  artifacts/analysis/20260212101915_instruction_sanity_check.csv
+```
+
+**Output:** `artifacts/visualization/sanity_checks/`
+
+#### 5. Price-Equivalent Trade-offs (from choice model)
+Shows by what percentage a seller can raise (or must cut) price to keep utility constant when adding (or losing) a feature.
+
+```bash
+# Generate price-equivalent trade-off plots for all features
+# Creates 10 plots: 4 individual features + 1 combined (each with all_providers and by_provider versions)
+uv run visualization price-tradeoffs artifacts/analysis/20260122104301_choice_model.csv
+```
+
+**Output:** `artifacts/visualization/price_equivalent_tradeoffs/`
+
+**Features analyzed:**
+- **Overall Pick tag**: Price increase possible when adding this tag
+- **Rating +0.1**: Price increase possible when rating improves by 0.1
+- **Double Reviews**: Price increase possible when review count doubles
+- **Sponsored Tag**: Price cut needed to offset negative perception
+
+**Note:** Positive percentages indicate the seller can raise prices; negative percentages indicate the seller must cut prices.
+
+### Visualization Output Structure
+
+All visualization plots are organized in subdirectories under `artifacts/visualization/`:
+
+```
+artifacts/visualization/
+├── position_bias/                  # Position bias across models
+├── heatmaps/                      # 2×4 position probability heatmaps
+├── feature_impact/                # Feature impact on selection probability
+├── sanity_checks/                 # Rationality suite sanity check failure rates
+└── price_equivalent_tradeoffs/    # Price-equivalent trade-offs for features
+```
+
+Each visualization type generates plots grouped by provider (Anthropic, Google, OpenAI) showing model performance evolution by release date.
+
 ## Repository Layout
 
 ```
